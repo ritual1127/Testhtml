@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>복동실린더 유압 회로 시뮬레이터</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, "Noto Sans KR", sans-serif;
+    background: #10141b;
+    color: #e9eef5;
+}
+
+header {
+    padding: 20px 25px;
+    background: #171d27;
+    border-bottom: 1px solid #2b3442;
+}
+
+header h1 {
+    margin: 0 0 6px;
+    font-size: 22px;
+}
+
+header p {
+    margin: 0;
+    color: #8f9bad;
+    font-size: 13px;
+}
+
+.container {
+    max-width: 1300px;
+    margin: auto;
+    padding: 20px;
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+button {
+    border: 1px solid #3a4555;
+    background: #202936;
+    color: white;
+    padding: 11px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+button:hover {
+    background: #2b3645;
+}
+
+button.active {
+    background: #1976d2;
+    border-color: #3292ef;
+}
+
+.speed-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #171d27;
+    padding: 8px 14px;
+    border-radius: 8px;
+}
+
+input[type="range"] {
+    width: 130px;
+}
+
+.simulator {
+    background: #171d27;
+    border: 1px solid #2b3442;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+svg {
+    width: 100%;
+    height: auto;
+    min-height: 560px;
+    display: block;
+}
+
+.status-area {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.status {
+    background: #171d27;
+    border: 1px solid #2b3442;
+    border-radius: 10px;
+    padding: 14px;
+}
+
+.status-title {
+    color: #8f9bad;
+    font-size: 12px;
+    margin-bottom: 7px;
+}
+
+.status-value {
+    font-size: 17px;
+    font-weight: bold;
+}
+
+.good {
+    color: #42d392;
+}
+
+.warn {
+    color: #ffbd45;
+}
+
+.info {
+    color: #58
