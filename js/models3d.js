@@ -775,7 +775,7 @@ function hSupplyModel(c) {
 /* ---------------- 전기 모듈 (랙) ---------------- */
 export const MOD_W = 16, MOD_H = 30;
 const BTN_COL = [['green', 'red', 'yellow'], ['green', 'red', 'blue']];
-const PP = 26;
+const PP = 40;
 function faceplate(m, title, draw) {
   const frame = rb(MOD_W, MOD_H, 1.2, 0.35, M.aluAnod);
   frame.position.z = -0.1;
@@ -803,10 +803,10 @@ function faceplate(m, title, draw) {
   m.body.push(frame, fp);
 }
 const P2 = (x, y) => [x - MOD_W / 2, MOD_H / 2 - y];
-const txt = (g, s, t, x, y, px = 0.62, col = '#25303c', w = 700) => { g.fillStyle = col; g.font = FONT(Math.round(s * px), w); g.fillText(t, (x - 0.25) * s, (y - 0.25) * s); };
-function symNO(g, s, x, y) { const X = (x - 0.25) * s, Y = (y - 0.25) * s; g.strokeStyle = '#3c4652'; g.lineWidth = s * 0.08; g.beginPath(); g.moveTo(X, Y - s * 0.8); g.lineTo(X, Y - s * 0.35); g.moveTo(X, Y + s * 0.8); g.lineTo(X, Y + s * 0.35); g.lineTo(X - s * 0.5, Y - s * 0.45); g.stroke(); }
-function symNC(g, s, x, y) { const X = (x - 0.25) * s, Y = (y - 0.25) * s; g.strokeStyle = '#3c4652'; g.lineWidth = s * 0.08; g.beginPath(); g.moveTo(X, Y - s * 0.8); g.lineTo(X, Y - s * 0.35); g.lineTo(X + s * 0.45, Y - s * 0.35); g.moveTo(X, Y + s * 0.8); g.lineTo(X, Y + s * 0.35); g.lineTo(X + s * 0.45, Y - s * 0.5); g.stroke(); }
-function symCoil(g, s, x, y) { g.strokeStyle = '#3c4652'; g.lineWidth = s * 0.08; g.strokeRect((x - 0.25 - 0.5) * s, (y - 0.25 - 0.35) * s, s, s * 0.7); }
+const txt = (g, s, t, x, y, px = 0.62, col = '#25303c', w = 700) => { g.fillStyle = col; g.font = FONT(Math.round(s * Math.max(px, 0.5) * 1.08), Math.max(w, 700)); g.fillText(t, (x - 0.25) * s, (y - 0.25) * s); };
+function symNO(g, s, x, y) { const X = (x - 0.25) * s, Y = (y - 0.25) * s; g.strokeStyle = '#2a333d'; g.lineWidth = s * 0.11; g.beginPath(); g.moveTo(X, Y - s * 0.8); g.lineTo(X, Y - s * 0.35); g.moveTo(X, Y + s * 0.8); g.lineTo(X, Y + s * 0.35); g.lineTo(X - s * 0.5, Y - s * 0.45); g.stroke(); }
+function symNC(g, s, x, y) { const X = (x - 0.25) * s, Y = (y - 0.25) * s; g.strokeStyle = '#2a333d'; g.lineWidth = s * 0.11; g.beginPath(); g.moveTo(X, Y - s * 0.8); g.lineTo(X, Y - s * 0.35); g.lineTo(X + s * 0.45, Y - s * 0.35); g.moveTo(X, Y + s * 0.8); g.lineTo(X, Y + s * 0.35); g.lineTo(X + s * 0.45, Y - s * 0.5); g.stroke(); }
+function symCoil(g, s, x, y) { g.strokeStyle = '#2a333d'; g.lineWidth = s * 0.11; g.strokeRect((x - 0.25 - 0.5) * s, (y - 0.25 - 0.35) * s, s, s * 0.7); }
 function lcd(m, x, y, w, h) {
   const [lx, ly] = P2(x, y);
   m.root.add(at(rb(w + 0.5, h + 0.5, 0.5, 0.15, M.dark), lx, ly, 0.6));
@@ -1034,6 +1034,7 @@ function moduleModel(c) {
       m.animating = on;
     };
   }
+  m.update(null, null);
   return finish(m);
 }
 

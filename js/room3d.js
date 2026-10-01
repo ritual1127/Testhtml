@@ -198,7 +198,7 @@ export class Room3D extends EventTarget {
     const views = {
       all: [new THREE.Vector3(-4, 170, 142), new THREE.Vector3(-4, 141, -14)],
       board: [new THREE.Vector3(0, 150, 104), new THREE.Vector3(0, 122, -8)],
-      rack: [new THREE.Vector3(0, this.rackY + 6, 82), new THREE.Vector3(0, this.rackY - 2, this.rackZ)],
+      rack: [new THREE.Vector3(0, this.rackY + 3, this.rackZ + 92), new THREE.Vector3(0, this.rackY, this.rackZ)],
       left: [new THREE.Vector3(-150, 160, 150), new THREE.Vector3(-20, 130, -12)],
       right: [new THREE.Vector3(150, 160, 150), new THREE.Vector3(20, 130, -12)],
       top: [new THREE.Vector3(0, 300, 40), new THREE.Vector3(0, 120, -12)],
