@@ -3,128 +3,172 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>복동실린더 유압 회로 시뮬레이터</title>
+<title>유압 시퀀스 시뮬레이터</title>
+<meta name="description" content="유압제어 실습과제 1·2·3의 유압 회로와 릴레이 전기 회로를 직접 움직여 보며 원리를 이해하는 인터랙티브 시뮬레이터">
+<meta name="theme-color" content="#0d1117">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f8cff'/%3E%3Crect x='10' y='24' width='30' height='16' rx='2' fill='none' stroke='white' stroke-width='4'/%3E%3Crect x='22' y='29' width='34' height='6' fill='white'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script>
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('hsim-theme'); } catch (e) {}
+    if (!t) t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#home" style="text-decoration:none;color:inherit">
+      <div class="brand-logo">유</div>
+      <div class="brand-text">
+        <div class="brand-title">유압 시퀀스 시뮬레이터</div>
+        <div class="brand-sub">유압제어 실습과제 1·2·3 — 움직여 보며 이해하기</div>
+      </div>
+    </a>
+    <nav class="tabs">
+      <a class="tab" href="#home">🏠 시작</a>
+      <a class="tab" href="#basics">📘 기초 원리</a>
+      <a class="tab" href="#t1">⚙️ 과제 1</a>
+      <a class="tab" href="#t2">⚙️ 과제 2</a>
+      <a class="tab" href="#t3">⚙️ 과제 3</a>
+      <a class="tab" href="#parts">📚 부품 사전</a>
+    </nav>
+    <button class="icon-btn" id="themeBtn" aria-label="테마 전환">☀️</button>
+  </div>
+</header>
 
-<style>
-* {
-    box-sizing: border-box;
-}
+<main>
+  <!-- ================= 홈 ================= -->
+  <section class="page" id="page-home">
+    <div class="hero">
+      <h1>회로도가 어렵다면, 직접 움직여 보세요 🔧</h1>
+      <p>유압제어 실습과제 1·2·3의 <b>유압 회로도</b>와 <b>전기(릴레이) 회로도</b>를 그대로 옮겨 만든 시뮬레이터예요.
+        PB1을 누르면 릴레이 접점이 붙고 떨어지고, 솔레노이드가 밸브를 밀고, 오일이 흐르고, 실린더가 움직이는 모습이
+        <b>한 단계씩</b> 보여요. 각 단계에서 <b>"왜 그렇게 되는지"</b>를 원인 → 결과 순서로 설명해 줍니다.</p>
+      <div class="cta">
+        <a class="btn primary" href="#t1">▶ 과제 1부터 시작하기</a>
+        <a class="btn" href="#basics">📘 기초 원리 먼저 보기</a>
+        <a class="btn" href="#parts">📚 부품 사전</a>
+      </div>
+    </div>
 
-body {
-    margin: 0;
-    font-family: Arial, "Noto Sans KR", sans-serif;
-    background: #10141b;
-    color: #e9eef5;
-}
+    <div class="grid-3" style="margin-bottom:16px">
+      <div class="card task-card">
+        <span class="pill">실습과제 1</span>
+        <h3>파일럿 체크 로킹 + 미터-아웃 전진</h3>
+        <div class="seq"><span>대기(로킹)</span><i>→</i><span>저속 전진</span><i>→</i><span>LS2</span><i>→</i><span>고속 후진</span><i>→</i><span>LS1 정지</span></div>
+        <ul>
+          <li>4/2 편솔(Y1) + 3/2 편솔(Y2, 파일럿 공급)</li>
+          <li>로드측 파일럿 체크 밸브로 위치 고정</li>
+          <li>일방향 유량제어 밸브로 <b>미터-아웃</b></li>
+          <li>릴레이 K1~K3, 빈칸 ①~⑨</li>
+        </ul>
+        <a class="btn primary" href="#t1">시뮬레이션 열기 →</a>
+      </div>
+      <div class="card task-card">
+        <span class="pill">실습과제 2</span>
+        <h3>급속 → 감속(배압) 전진 → 급속 후진</h3>
+        <div class="seq"><span>중립 정지</span><i>→</i><span>급속 전진</span><i>→</i><span>LS2 배압</span><i>→</i><span>LS3 급속 후진</span><i>→</i><span>LS1 리셋</span></div>
+        <ul>
+          <li>4/3 양솔 올 포트 블록 (Y1·Y2)</li>
+          <li>2/2 편솔 N/O(Y3)로 3 MPa 릴리프 우회/차단</li>
+          <li>압력보상형 유량제어 밸브</li>
+          <li>릴레이 K1~K4 (K4 = 도미노 리셋), 빈칸 ①~③</li>
+        </ul>
+        <a class="btn primary" href="#t2">시뮬레이션 열기 →</a>
+      </div>
+      <div class="card task-card">
+        <span class="pill">실습과제 3</span>
+        <h3>급속 전진 + 미터-인 후진</h3>
+        <div class="seq"><span>대기(로킹)</span><i>→</i><span>급속 전진</span><i>→</i><span>LS2</span><i>→</i><span>저속 후진</span><i>→</i><span>LS1 정지</span></div>
+        <ul>
+          <li>헤드측 파일럿 체크 밸브 (과제 1과 반대 위치)</li>
+          <li>로드측 일방향 유량제어 → 후진 <b>미터-인</b></li>
+          <li>4번 줄 K2 b접점 인터록</li>
+          <li>릴레이 K1~K3, 빈칸 ①</li>
+        </ul>
+        <a class="btn primary" href="#t3">시뮬레이션 열기 →</a>
+      </div>
+    </div>
 
-header {
-    padding: 20px 25px;
-    background: #171d27;
-    border-bottom: 1px solid #2b3442;
-}
+    <div class="grid-2" style="margin-bottom:16px">
+      <div class="card">
+        <div class="card-h">🧭 사용 방법</div>
+        <div class="card-b">
+          <ol class="howto">
+            <li><b>단계별 모드</b>(기본)에서 <b>"PB1 누르고 시작 ▶"</b>을 누르면 동작이 시작되고, <b>단계가 바뀔 때마다 자동으로 멈춰요.</b> 아래 설명을 읽고 <b>"다음 단계 ▶"</b>.</li>
+            <li>회로도의 <b>부품·접점·코일을 클릭</b>하면 역할과 원리가 나와요. 마우스를 올리면 전기 ↔ 유압 회로에서 <b>같은 부품</b>이 함께 강조돼요.</li>
+            <li>릴레이가 너무 빨리 바뀌면 <b>릴레이: 아주 천천히</b>로 바꿔 접점이 하나씩 바뀌는 순서를 관찰하세요.</li>
+            <li><b>연속</b> 모드로 바꾸면 사이클이 쉬지 않고 반복돼요. <b>빈칸 모드</b>를 켜면 시험지처럼 부품 이름이 가려져요.</li>
+            <li>위쪽 <b>단계 타임라인</b>을 클릭하면 아직 안 온 단계의 설명도 미리 볼 수 있어요.</li>
+          </ol>
+          <p class="small muted" style="margin:12px 0 0">키보드: <b>N</b> 또는 → 다음 단계 · <b>Space</b> 재생/정지 · <b>P</b> PB1 누르기 · <b>R</b> 처음으로</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">🎨 색깔 읽는 법</div>
+        <div class="card-b">
+          <div class="legend" style="flex-direction:column;gap:9px">
+            <span class="lg"><svg width="40" height="10"><line x1="1" y1="5" x2="39" y2="5" stroke="var(--p)" stroke-width="5"/></svg><b>빨강</b> — 펌프 압력이 걸린 공급 라인</span>
+            <span class="lg"><svg width="40" height="10"><line x1="1" y1="5" x2="39" y2="5" stroke="var(--r)" stroke-width="5"/></svg><b>파랑</b> — 탱크로 돌아가는 복귀 라인</span>
+            <span class="lg"><svg width="40" height="10"><line x1="1" y1="5" x2="39" y2="5" stroke="var(--pilot)" stroke-width="4" stroke-dasharray="6 4"/></svg><b>주황 점선</b> — 파일럿 신호 압력</span>
+            <span class="lg"><svg width="40" height="10"><line x1="1" y1="5" x2="39" y2="5" stroke="var(--lock)" stroke-width="5"/></svg><b>보라</b> — 빠져나가지 못하고 갇힌 오일(로킹)</span>
+            <span class="lg"><svg width="40" height="10"><line x1="1" y1="5" x2="39" y2="5" stroke="var(--cur)" stroke-width="4"/></svg><b>노랑</b> — 전기 회로에서 전류가 흐르는 길 / 켜진 코일</span>
+            <span class="lg"><svg width="40" height="10"><line x1="1" y1="5" x2="39" y2="5" stroke="var(--live)" stroke-width="4"/></svg><b>어두운 노랑</b> — 전압은 왔지만 열린 접점에서 막힘</span>
+            <span class="lg muted">··· 선 위를 움직이는 흰 점 = 오일/전류가 흐르는 방향</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
-header h1 {
-    margin: 0 0 6px;
-    font-size: 22px;
-}
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-h">📊 세 과제 한눈에 비교 (시험 대비)</div>
+      <div class="card-b" style="overflow-x:auto">
+        <table class="cmp">
+          <tr><th></th><th>실습과제 1</th><th>실습과제 2</th><th>실습과제 3</th></tr>
+          <tr><td><b>동작 순서</b></td><td>저속 전진 → 고속 후진</td><td>급속 전진 → 감속(배압) 전진 → 급속 후진</td><td>급속 전진 → 저속 후진</td></tr>
+          <tr><td><b>메인 밸브</b></td><td>4/2 편솔 Y1<br><span class="muted small">소자 = 평행(전진 방향), 통전 = 교차(후진)</span></td><td>4/3 양솔 올 포트 블록<br><span class="muted small">Y1 = 전진, Y2 = 후진, 둘 다 OFF = 중립</span></td><td>4/2 편솔 Y1<br><span class="muted small">통전 = 평행(전진), 소자 = 교차(후진 방향)</span></td></tr>
+          <tr><td><b>속도 제어</b></td><td><b>미터-아웃</b> (로드측 배출, 전진)</td><td>압력보상 밸브(미터-인, 전진) + 2단계 배압</td><td><b>미터-인</b> (로드측 공급, 후진)</td></tr>
+          <tr><td><b>정지·고정</b></td><td>로드측 파일럿 체크 밸브 로킹</td><td>4/3 밸브 중립(모든 포트 차단)</td><td>헤드측 파일럿 체크 밸브 로킹</td></tr>
+          <tr><td><b>파일럿 신호</b></td><td>Y2 (3/2 NC) → 전진 허용</td><td>없음</td><td>Y2 (3/2 NC) → 후진 허용</td></tr>
+          <tr><td><b>특별한 밸브</b></td><td>—</td><td>Y3 (2/2 N/O) + 3±0.5 MPa 릴리프 (배압)</td><td>—</td></tr>
+          <tr><td><b>리셋 방법</b></td><td>LS1 → K3 b접점이 K2 해제</td><td>LS1 → K4 → K1→K2→K3→K4 도미노</td><td>LS1 → K3 b접점이 K2 해제</td></tr>
+          <tr><td><b>릴레이</b></td><td>K1~K3</td><td>K1~K4</td><td>K1~K3</td></tr>
+        </table>
+      </div>
+    </div>
 
-header p {
-    margin: 0;
-    color: #8f9bad;
-    font-size: 13px;
-}
+    <div class="notice">
+      <h4>📝 노트와 회로도가 다르게 적힌 부분 (회로도 기준으로 정리했어요)</h4>
+      <ul>
+        <li><b>과제 1 ⑤</b>: 노트 4쪽에는 "4/2-way <b>양</b>솔레노이드 밸브"라고 되어 있지만, 회로도는 한쪽이 솔레노이드·반대쪽이 스프링인 <b>편솔레노이드</b>예요. (노트 2쪽 표기 "편솔레노이드"가 맞음)</li>
+        <li><b>과제 1 Y1</b>: 노트 2쪽 부품 설명의 "통전 시 교차 위치 → <b>헤드 측</b> 공급(전진)"은 회로도와 달라요. 교차 위치는 P→B(<b>로드 측</b>)이라 <b>통전 시 후진</b>이에요. 같은 노트의 단계 설명(③·④, LS2 → Y1 → 후진)은 맞게 적혀 있어요.</li>
+        <li><b>과제 2</b>: "감속 전진"과 "압력보상 밸브가 유량을 일정하게 유지"가 함께 적혀 있어요. 둘의 관계는 과제 2 시뮬레이터의 2단계 <b>심화 설명</b>에 정리해 두었어요.</li>
+      </ul>
+    </div>
+  </section>
 
-.container {
-    max-width: 1300px;
-    margin: auto;
-    padding: 20px;
-}
+  <section class="page" id="page-basics"></section>
+  <section class="page" id="page-t1"></section>
+  <section class="page" id="page-t2"></section>
+  <section class="page" id="page-t3"></section>
+  <section class="page" id="page-parts"></section>
+</main>
 
-.controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 18px;
-}
+<footer>유압제어 실습과제 학습용 시뮬레이터 · 압력·속도 수치는 원리 이해를 돕기 위한 예시값이에요.</footer>
 
-button {
-    border: 1px solid #3a4555;
-    background: #202936;
-    color: white;
-    padding: 11px 18px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-button:hover {
-    background: #2b3645;
-}
-
-button.active {
-    background: #1976d2;
-    border-color: #3292ef;
-}
-
-.speed-box {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: #171d27;
-    padding: 8px 14px;
-    border-radius: 8px;
-}
-
-input[type="range"] {
-    width: 130px;
-}
-
-.simulator {
-    background: #171d27;
-    border: 1px solid #2b3442;
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-svg {
-    width: 100%;
-    height: auto;
-    min-height: 560px;
-    display: block;
-}
-
-.status-area {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    margin-top: 15px;
-}
-
-.status {
-    background: #171d27;
-    border: 1px solid #2b3442;
-    border-radius: 10px;
-    padding: 14px;
-}
-
-.status-title {
-    color: #8f9bad;
-    font-size: 12px;
-    margin-bottom: 7px;
-}
-
-.status-value {
-    font-size: 17px;
-    font-weight: bold;
-}
-
-.good {
-    color: #42d392;
-}
-
-.warn {
-    color: #ffbd45;
-}
-
-.info {
-    color: #58
+<script src="js/svg.js"></script>
+<script src="js/hyd.js"></script>
+<script src="js/ladder.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/tasks.js"></script>
+<script src="js/parts.js"></script>
+<script src="js/basics.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
