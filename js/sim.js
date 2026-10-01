@@ -160,9 +160,10 @@
       const T = this.task, root = this.root;
       root.innerHTML = '';
       root.append(H('div', { class: 'task-top' },
-        H('div', null,
+        H('div', { style: 'flex:1;min-width:260px' },
           H('h1', { text: `${T.title} · ${T.name}` }),
-          H('div', { class: 'goal', html: T.goal }))));
+          H('div', { class: 'goal', html: T.goal })),
+        H('a', { class: 'btn study-link', href: '#study', onclick: () => { window.STUDY_PRESET = T.id; } }, '✍️ 이 과제 외우기 →')));
 
       // 타임라인
       this.tl = H('div', { class: 'timeline' });

@@ -17,6 +17,8 @@
       svg.append(this.gLines, this.gFlow, this.gSym, this.gDots, this.gTag);
       this.lines = {};
       this.tags = [];
+      this.plains = [];
+      this.W = w; this.H = h;
     }
     /** 배관 라인: pts 순서가 '기준 방향'(dir=+1) */
     line(id, pts, opt = {}) {
@@ -72,7 +74,7 @@
       const tx = S('text', { y, class: 'tag-name', text: name });
       g.append(bg, tn, tx);
       this.gTag.append(g);
-      const T = { g, bg, tn, tx, name, num, x, anchor };
+      const T = { g, bg, tn, tx, name, num, x, y, anchor, ref };
       this.tags.push(T);
       this._layoutTag(T, name);
       return T;
@@ -91,6 +93,7 @@
       const t = S('text', { x, y, class: 'plain-name', 'text-anchor': anchor, 'data-ref': ref, text });
       t.style.cursor = 'pointer';
       this.gTag.append(t);
+      this.plains.push({ x, y, ref, anchor, el: t, text });
       return t;
     }
     setQuiz(on) {

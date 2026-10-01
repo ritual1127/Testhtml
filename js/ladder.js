@@ -15,6 +15,7 @@
       this.wires = [];
       this.contacts = [];
       this.coils = [];
+      this.labels = [];
       const gW = S('g'), gF = S('g'), gC = S('g'), gT = S('g');
       this.gW = gW; this.gF = gF;
       svg.append(gW, gF, gC, gT);
@@ -111,8 +112,10 @@
         }
       }
       const lx = el.act === 'k' ? x - 10 : x - 40;
-      gT.append(S('text', { x: lx, y: ym + 5, 'text-anchor': 'end', class: 'lad-label', text: el.ref, 'data-ref': el.ref }));
-      gT.append(S('text', { x: x + 12, y: yb - 3, class: 'lad-ab', text: el.kind === 'nc' ? 'b' : 'a' }));
+      const lt = S('text', { x: lx, y: ym + 5, 'text-anchor': 'end', class: 'lad-label', text: el.ref, 'data-ref': el.ref });
+      const ab = S('text', { x: x + 12, y: yb - 3, class: 'lad-ab', text: el.kind === 'nc' ? 'b' : 'a' });
+      gT.append(lt, ab);
+      this.labels.push({ ref: el.ref, x: lx, y: ym + 5, el: lt, ab, g, ri, slot, kind: el.kind });
       gC.append(g);
       if (isPB && this.opts.onPB) {
         const dn = e => { e.preventDefault(); this.opts.onPB(true, el.ref); };
@@ -143,7 +146,9 @@
         g.append(S('path', { d: `M${x + 26} ${CT + 1} L${x + 38} ${CT + 1} L${x + 26} ${CB - 1} L${x + 38} ${CB - 1} Z`, class: 'act' }));
         g.append(S('line', { x1: x + 32, y1: CT - 5, x2: x + 32, y2: CT + 1, class: 'act' }), S('line', { x1: x + 32, y1: CB - 1, x2: x + 32, y2: CB + 5, class: 'act' }));
       }
-      gT.append(S('text', { x: x - 23, y: CT + 18, 'text-anchor': 'end', class: 'lad-label', text: coil.ref, 'data-ref': coil.ref }));
+      const lt = S('text', { x: x - 23, y: CT + 18, 'text-anchor': 'end', class: 'lad-label', text: coil.ref, 'data-ref': coil.ref });
+      gT.append(lt);
+      this.labels.push({ ref: coil.ref, x: x - 23, y: CT + 18, el: lt, g, ri, slot: 'c', kind: coil.kind });
       gC.append(g);
       this.coils.push({ coil, rect, ri, last: '' });
     }

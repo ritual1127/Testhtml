@@ -31,7 +31,7 @@
       });
     },
     route() {
-      const valid = ['home', 'basics', 't1', 't2', 't3', 'parts'];
+      const valid = ['home', 'basics', 't1', 't2', 't3', 'study', 'parts'];
       let id = (location.hash || '#home').slice(1);
       if (!valid.includes(id)) id = 'home';
       document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + id));
@@ -41,8 +41,10 @@
         this.built[id] = true;
         if (id === 'basics') buildBasics(root);
         else if (id === 'parts') buildPartsPage(root);
+        else if (id === 'study') Study.build(root);
         else if (TASKS[id]) this.views[id] = new TaskView(root, TASKS[id]);
       }
+      else if (id === 'study') Study.show();
       // 다른 과제는 멈춤
       for (const k in this.views) if (k !== id && this.views[k].running) this.views[k].pause();
       this.current = id;

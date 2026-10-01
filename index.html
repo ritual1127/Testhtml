@@ -36,6 +36,7 @@
       <a class="tab" href="#t1">⚙️ 과제 1</a>
       <a class="tab" href="#t2">⚙️ 과제 2</a>
       <a class="tab" href="#t3">⚙️ 과제 3</a>
+      <a class="tab" href="#study">✍️ 암기 훈련</a>
       <a class="tab" href="#parts">📚 부품 사전</a>
     </nav>
     <button class="icon-btn" id="themeBtn" aria-label="테마 전환">☀️</button>
@@ -53,6 +54,7 @@
       <div class="cta">
         <a class="btn primary" href="#t1">▶ 과제 1부터 시작하기</a>
         <a class="btn" href="#basics">📘 기초 원리 먼저 보기</a>
+        <a class="btn" href="#study">✍️ 암기 훈련 (타이핑)</a>
         <a class="btn" href="#parts">📚 부품 사전</a>
       </div>
     </div>
@@ -93,6 +95,19 @@
           <li>릴레이 K1~K3, 빈칸 ①</li>
         </ul>
         <a class="btn primary" href="#t3">시뮬레이션 열기 →</a>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;border-color:color-mix(in srgb,var(--accent) 45%,var(--line))">
+      <div class="card-h">✍️ 이해했으면 이제 외우기 — 암기 훈련</div>
+      <div class="card-b" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center">
+        <ul style="margin:0;padding-left:18px;flex:1;min-width:260px">
+          <li><b>회로도 빈칸 쓰기</b>: 실제 유압 회로도·래더 회로 위 빈칸에 부품 이름과 K1·LS2 같은 접점 이름을 직접 타이핑</li>
+          <li><b>노트 빈칸 쓰기</b>: 노트 문장의 핵심어를 가리고 타이핑 (틀리면 초성 힌트 → 정답 따라 치기)</li>
+          <li><b>따라 쓰기 → 초성 보고 쓰기 → 안 보고 쓰기</b>: 3단계 필사로 문장을 통째로 외우기</li>
+          <li><b>순서 맞추기 · 간격 반복 복습 · 오답 노트 · 모의고사</b>, 진도는 브라우저에 자동 저장</li>
+        </ul>
+        <a class="btn primary" href="#study">✍️ 암기 훈련 시작 →</a>
       </div>
     </div>
 
@@ -148,6 +163,7 @@
       <ul>
         <li><b>과제 1 ⑤</b>: 노트 4쪽에는 "4/2-way <b>양</b>솔레노이드 밸브"라고 되어 있지만, 회로도는 한쪽이 솔레노이드·반대쪽이 스프링인 <b>편솔레노이드</b>예요. (노트 2쪽 표기 "편솔레노이드"가 맞음)</li>
         <li><b>과제 1 Y1</b>: 노트 2쪽 부품 설명의 "통전 시 교차 위치 → <b>헤드 측</b> 공급(전진)"은 회로도와 달라요. 교차 위치는 P→B(<b>로드 측</b>)이라 <b>통전 시 후진</b>이에요. 같은 노트의 단계 설명(③·④, LS2 → Y1 → 후진)은 맞게 적혀 있어요.</li>
+        <li><b>과제 1 ④ 파일럿 작동 체크 밸브</b>: 노트 2쪽에는 "전진 시 자유 흐름, 후진 시 Y2 파일럿으로 열림"이라고 되어 있지만, 과제 1에서는 이 밸브가 <b>로드 측</b>에 있어서 반대예요. <b>전진할 때</b> Y2의 파일럿 압력이 필요하고(노트 1단계 설명 "PB1 → K1 → Y2 동작 → 전진 시작"과도 일치), 후진할 때는 정방향이라 그냥 열려요. 노트 문장은 헤드 측에 있는 <b>과제 3</b>의 설명과 같아요.</li>
         <li><b>과제 2</b>: "감속 전진"과 "압력보상 밸브가 유량을 일정하게 유지"가 함께 적혀 있어요. 둘의 관계는 과제 2 시뮬레이터의 2단계 <b>심화 설명</b>에 정리해 두었어요.</li>
       </ul>
     </div>
@@ -157,6 +173,7 @@
   <section class="page" id="page-t1"></section>
   <section class="page" id="page-t2"></section>
   <section class="page" id="page-t3"></section>
+  <section class="page" id="page-study"></section>
   <section class="page" id="page-parts"></section>
 </main>
 
@@ -167,6 +184,8 @@
 <script src="js/ladder.js"></script>
 <script src="js/sim.js"></script>
 <script src="js/tasks.js"></script>
+<script src="js/studydata.js"></script>
+<script src="js/study.js"></script>
 <script src="js/parts.js"></script>
 <script src="js/basics.js"></script>
 <script src="js/app.js"></script>
