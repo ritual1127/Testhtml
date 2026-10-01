@@ -68,7 +68,8 @@ export class Sim {
     const keys = new Map(); // portKey -> idx
     const info = [];
     for (const c of this.comps) {
-      for (const p of REG[c.type].ports(c)) {
+      const d0 = REG[c.type];
+      for (const p of [...d0.ports(c), ...(d0.jacks ? d0.jacks(c) : [])]) {
         const k = c.id + ':' + p.id;
         keys.set(k, info.length);
         info.push({ c, p, kind: p.kind, wires: 0 });
@@ -117,6 +118,7 @@ export class Sim {
       if (d.init) d.init(c, st, this);
     }
     this.cyls = this.comps.filter((c) => c.type.includes('_cyl_'));
+    this.attached = this.comps.filter((c) => c.props && c.props.cyl);
     this.valves = this.comps.filter((c) => REG[c.type].valve);
     this.fluidComps = this.comps.filter((c) => REG[c.type].fluid);
     this.elComps = this.comps.filter((c) => REG[c.type].elec);
@@ -166,6 +168,7 @@ export class Sim {
     d.press(c, this.st.get(id), this, lx, ly);
     return true;
   }
+  attachOn(c) { return !!(this.st.get(c.id) || {}).att; }
   release(id) {
     const c = this.byId.get(id);
     if (!c) return;
@@ -198,6 +201,15 @@ export class Sim {
 
   computeMarks(dt) {
     this.marks.clear();
+    for (const c of this.attached) {
+      const st = this.st.get(c.id);
+      const cs = this.st.get(c.props.cyl);
+      const cy = this.byId.get(c.props.cyl);
+      if (!cs || !cy) { st.att = false; continue; }
+      const Lm = +cy.props.stroke || 100, pos = Math.max(0, Math.min(Lm, +c.props.pos || 0));
+      const tol = Math.max(1.5, Math.abs(cs.v || 0) * 10 * dt * 0.75);
+      st.att = pos <= 0.5 ? cs.x <= 0.5 : pos >= Lm - 0.5 ? cs.x >= Lm - 0.5 : Math.abs(cs.x - pos) <= tol;
+    }
     for (const c of this.cyls) {
       const st = this.st.get(c.id);
       const Lm = +c.props.stroke || 100;
@@ -231,7 +243,7 @@ export class Sim {
         const k = {
           contact: (a, b, closed) => { if (closed) uf.union(net(a), net(b)); },
           supply: (a, s) => (s === '+' ? plus : zero).push(net(a)),
-          load: (a, b) => loads.push({ c, st, a: net(a), b: net(b) }),
+          load: (a, b, cb) => loads.push({ c, st, a: net(a), b: net(b), cb }),
         };
         REG[c.type].elec(c, st, k, this);
       }
@@ -242,7 +254,9 @@ export class Sim {
       this.short = short;
       for (const L of loads) {
         const ra = uf.find(L.a), rb = uf.find(L.b);
-        L.st.on = !short && ((P.has(ra) && Z.has(rb)) || (P.has(rb) && Z.has(ra)));
+        const on = !short && ((P.has(ra) && Z.has(rb)) || (P.has(rb) && Z.has(ra)));
+        if (L.cb) { L.cb(on); continue; }
+        L.st.on = on;
         const d = REG[L.c.type];
         if (d.publish) d.publish(L.c, L.st, this);
       }

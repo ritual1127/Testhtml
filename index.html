@@ -10,6 +10,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/room3d.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three/three.module.min.js" } }</script>
 </head>
 <body>
 <div id="app">
@@ -56,7 +58,8 @@
     <div class="grp views">
       <button data-view="circuit" class="on" title="회로 작도실">회로도</button>
       <button data-view="split" title="회로도 + 실습장비">분할</button>
-      <button data-view="trainer" title="가상 실습장비">실습장비</button>
+      <button data-view="trainer" title="2D 장비 배치도">장비 배치도</button>
+      <button data-cmd="to3d" class="to3d" title="현재 회로를 3D 실습실로 보내기 (자동 배치·배선)">3D 실습실 ▶</button>
       <button data-cmd="chart" id="btnChart" title="변위-시간 선도"><i data-ico="chart"></i><span>선도</span></button>
     </div>
   </div>
@@ -101,6 +104,68 @@
   </footer>
 </div>
 
+<div id="room3d">
+  <div id="r3top">
+    <div class="r3l">
+      <button data-r="home" title="메인 화면"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9h-6v-6H9v6H3z"/></svg></button>
+      <button data-r="new" title="새 실습"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4"/></svg></button>
+      <button data-r="open" title="열기"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg></button>
+      <button data-r="save" title="저장"><svg viewBox="0 0 24 24"><path d="M5 3h12l3 3v15H5zM8 3v6h8V3M8 21v-7h8v7"/></svg></button>
+      <button data-r="undo" title="실행 취소 (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h11a5 5 0 010 10h-4"/></svg></button>
+      <button data-r="redo" title="다시 실행 (Ctrl+Y)"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5M20 9H9a5 5 0 000 10h4"/></svg></button>
+      <button data-r="shot" title="화면 저장 (PNG)"><svg viewBox="0 0 24 24"><path d="M4 7h4l2-3h4l2 3h4v12H4zM12 10a3.5 3.5 0 100 7 3.5 3.5 0 000-7z"/></svg></button>
+    </div>
+    <div class="r3c"><b id="r3title">공압 실습실</b><span id="r3dirty"></span></div>
+    <div class="r3r">
+      <button data-r="afluid" class="txt">배관 분석</button>
+      <button data-r="aelec" class="txt">전기배선 분석</button>
+      <button data-r="2d" class="txt">2D 회로도</button>
+      <span class="sep"></span>
+      <button data-r="start" class="go">▶ 시작</button>
+      <button data-r="pause" class="hidden txt">⏸ 일시정지</button>
+      <button data-r="step" title="0.1초 단계 실행">⏭</button>
+      <button data-r="reset" title="초기화 후 재시작">↺</button>
+      <button data-r="stop" class="stop">■ 정지</button>
+      <select id="r3q" title="그래픽 품질"><option value="high">고품질</option><option value="mid">보통</option><option value="low">빠르게</option></select>
+      <select id="r3speed" title="속도"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+      <span id="r3clock">t = 0.00 s</span>
+    </div>
+  </div>
+  <div id="r3main">
+    <div id="r3view">
+      <div id="r3tip" class="hidden"></div>
+      <div id="r3simtag" class="hidden">● 시뮬레이션 실행 중 — 버튼·스위치·밸브를 클릭하여 조작</div>
+      <div id="r3side">
+        <span class="lbl">전선</span>
+        <button data-color="red" class="on" title="빨강" style="--c:#d32f2f"></button>
+        <button data-color="blue" title="파랑" style="--c:#1e4fc2"></button>
+        <button data-color="black" title="검정" style="--c:#1d1d1d"></button>
+        <button data-color="yellow" title="노랑" style="--c:#e6b800"></button>
+        <button data-color="green" title="초록" style="--c:#1e9e4a"></button>
+        <hr>
+        <button data-r="hoses" title="호스 표시/숨기기" class="ic">H</button>
+        <button data-r="wires" title="전선 표시/숨기기" class="ic">E</button>
+        <hr>
+        <span class="lbl">시점</span>
+        <button data-view="all" class="ic" title="전체">⛶</button>
+        <button data-view="board" class="ic" title="보드">▭</button>
+        <button data-view="rack" class="ic" title="전기 모듈">▤</button>
+        <button data-view="left" class="ic" title="왼쪽">◩</button>
+        <button data-view="right" class="ic" title="오른쪽">◪</button>
+        <button data-view="top" class="ic" title="위">⊤</button>
+        <hr>
+        <button data-r="rotate" class="ic" title="선택 부품 회전 (R)">↻</button>
+        <button data-r="delete" class="ic" title="선택 삭제 (Del)">🗑</button>
+        <button data-r="help" class="ic" title="사용 방법">?</button>
+      </div>
+    </div>
+    <aside id="r3panel"></aside>
+  </div>
+  <div id="r3tray" class="hidden"></div>
+  <div id="r3bottom"><div id="r3cats"></div><div id="r3status"></div></div>
+  <input type="file" id="fileInput3" accept=".json" hidden>
+</div>
+
 <div id="home" class="overlay">
   <div class="home-card">
     <div class="home-head">
@@ -110,14 +175,24 @@
         <p>공압 · 유압 · 전기 시퀀스 회로 작도 및 가상 실습 시뮬레이터</p>
       </div>
     </div>
+    <div class="home-grid3">
+      <button class="hcard big pn" data-home="pn3d">
+        <svg viewBox="0 0 160 80"><path d="M14 70 L30 22 H130 L146 70Z" fill="#cfd6de" stroke="#64748b" stroke-width="2"/><path d="M22 58h116M25 50h110M27 42h106M29 34h102" stroke="#8b96a3" stroke-width="2"/><rect x="34" y="4" width="92" height="14" rx="2" fill="#eef2f6" stroke="#64748b"/><circle cx="46" cy="11" r="3" fill="#d32f2f"/><circle cx="58" cy="11" r="3" fill="#16a34a"/><rect x="48" y="38" width="34" height="6" rx="2" fill="#e5e7eb" stroke="#475569"/><rect x="82" y="40" width="22" height="2" fill="#94a3b8"/><path d="M60 44q10 14 30 4" stroke="#2c7be5" stroke-width="2.5" fill="none"/><path d="M46 18q-6 18 8 22" stroke="#d32f2f" stroke-width="1.5" fill="none"/></svg>
+        <b>공압 실습실 <em>3D</em></b><span>가상 실습 장비에 부품 설치 · 호스/전선 연결 · 시뮬레이션</span>
+      </button>
+      <button class="hcard big hy" data-home="hy3d">
+        <svg viewBox="0 0 160 80"><path d="M14 70 L30 22 H130 L146 70Z" fill="#cfd6de" stroke="#64748b" stroke-width="2"/><path d="M22 58h116M25 50h110M27 42h106M29 34h102" stroke="#8b96a3" stroke-width="2"/><rect x="34" y="4" width="92" height="14" rx="2" fill="#eef2f6" stroke="#64748b"/><rect x="2" y="52" width="22" height="26" fill="#7f93a8" stroke="#334155"/><rect x="48" y="38" width="38" height="8" rx="2" fill="#374151"/><path d="M24 60q20 0 34-14" stroke="#111" stroke-width="3" fill="none"/></svg>
+        <b>유압 실습실 <em>3D</em></b><span>유압 파워유닛 · 유압 밸브 · 전기-유압 시퀀스 실습</span>
+      </button>
+    </div>
     <div class="home-grid">
       <button class="hcard pn" data-home="pn">
         <svg viewBox="0 0 120 70"><rect x="8" y="22" width="60" height="22" fill="#fff" stroke="#1d4ed8" stroke-width="2.5"/><rect x="30" y="24" width="5" height="18" fill="#1d4ed8"/><rect x="35" y="31" width="70" height="4" fill="#1d4ed8"/><path d="M20 44v14h40V44" fill="none" stroke="#60a5fa" stroke-width="3"/></svg>
-        <b>공압 실습</b><span>공압 회로 작도실 · 전기-공압 시퀀스</span>
+        <b>공압 회로 작도실</b><span>2D 기호로 회로도 작도 · 시뮬레이션</span>
       </button>
       <button class="hcard hy" data-home="hy">
         <svg viewBox="0 0 120 70"><rect x="8" y="22" width="60" height="22" fill="#fff" stroke="#b91c1c" stroke-width="2.5"/><rect x="30" y="24" width="5" height="18" fill="#b91c1c"/><rect x="35" y="31" width="70" height="4" fill="#b91c1c"/><path d="M20 44v14h40V44" fill="none" stroke="#f87171" stroke-width="3"/></svg>
-        <b>유압 실습</b><span>유압 회로 작도실 · 전기-유압 시퀀스</span>
+        <b>유압 회로 작도실</b><span>2D 기호로 회로도 작도 · 시뮬레이션</span>
       </button>
       <button class="hcard ex" data-home="examples">
         <svg viewBox="0 0 120 70"><rect x="20" y="8" width="56" height="56" rx="4" fill="#fff" stroke="#047857" stroke-width="2.5"/><path d="M30 24h36M30 34h36M30 44h24" stroke="#10b981" stroke-width="3"/><circle cx="88" cy="46" r="14" fill="#10b981"/><path d="M82 46l5 5 8-10" stroke="#fff" stroke-width="3" fill="none"/></svg>

@@ -129,7 +129,7 @@ function valveDef(o) {
   const props = [P_TAG(o.tag || (o.dom === 'pn' ? '1V1' : 'V1'))];
   for (const a of [...spec.L, ...spec.R]) {
     if (a.t === 'sol') props.push({ k: a.k, l: a.lab || '솔레노이드', t: 'text', d: a.d });
-    if (a.t === 'roller') props.push({ k: a.k, l: '롤러 태그(실린더 센서)', t: 'text', d: a.d });
+    if (a.t === 'roller') props.push({ k: a.k, l: '롤러 태그(실린더 센서)', t: 'text', d: a.d }, { k: 'cyl', l: '작동 실린더(3D)', t: 'cyl', d: '' }, { k: 'pos', l: '작동 위치(3D)', t: 'num', d: 0, min: 0, max: 1000, u: 'mm' });
   }
   if (o.extraProps) props.push(...o.extraProps);
   return def({
@@ -186,6 +186,17 @@ function valveDef(o) {
       if (o.labelsExtra) ls.push(...o.labelsExtra(c, st, sim, x0, x1));
       return { b, l: ls };
     },
+    // 3D 실습실: 솔레노이드 커넥터 잭
+    jacks() {
+      const js = [];
+      if (spec.L.some((a) => a.t === 'sol')) js.push({ id: 'S14a', kind: 'el', lab: '+' }, { id: 'S14b', kind: 'el', lab: '-' });
+      if (spec.R.some((a) => a.t === 'sol')) js.push({ id: 'S12a', kind: 'el', lab: '+' }, { id: 'S12b', kind: 'el', lab: '-' });
+      return js;
+    },
+    elec: [...spec.L, ...spec.R].some((a) => a.t === 'sol') ? (c, st, k) => {
+      if (spec.L.some((a) => a.t === 'sol')) k.load('S14a', 'S14b', (on) => { st.e14 = on; });
+      if (spec.R.some((a) => a.t === 'sol')) k.load('S12a', 'S12b', (on) => { st.e12 = on; });
+    } : undefined,
     // 시뮬레이션: 위치에 따른 통로 연결
     fluid(c, st, k) {
       const g = MED[o.dom].Gopen;
@@ -232,9 +243,9 @@ export function valveUpdate(c, d, st, sim, k, dt) {
   const sideOn = (acts, side) => {
     let on = false;
     for (const a of acts) {
-      if (a.t === 'sol') on = on || sim.solOn(c.props[a.k]) || st.man[side];
+      if (a.t === 'sol') on = on || sim.solOn(c.props[a.k]) || st.man[side] || !!(side === 'L' ? st.e14 : st.e12);
       else if (a.t === 'push' || a.t === 'lever') on = on || st.man[side];
-      else if (a.t === 'roller') on = on || sim.markOn(c.props[a.k]) || st.man[side];
+      else if (a.t === 'roller') on = on || sim.markOn(c.props[a.k]) || st.man[side] || !!st.att;
       else if (a.t === 'pilot') {
         const pid = side === 'L' ? spec.pilotL : spec.pilotR;
         const p = k.p(pid);
@@ -593,6 +604,8 @@ function pswitchDef(dom) {
       b += PL([[14, 0], [22, 0], [22, -8]], on ? 'live' : '');
       return { b, l: [lbl(18, 26, `${c.props.tag} ${c.props.p}bar`, 'tag', 'start')] };
     },
+    jacks: () => [{ id: 'C', kind: 'el', lab: 'COM' }, { id: 'NO', kind: 'el', lab: 'NO' }, { id: 'NC', kind: 'el', lab: 'NC' }],
+    elec(c, st, k) { k.contact('C', 'NO', !!st.on); k.contact('C', 'NC', !st.on); },
     post(c, st, sim) {
       const p = sim.pAt(c, '1');
       const was = st.on;
@@ -976,6 +989,138 @@ loadDef({ type: 'e_lamp', name: '표시등 (램프)', cat: '출력 (솔레노이
   body: (on, c) => L(0, -20, 0, -10) + L(0, 10, 0, 20) + C(0, 0, 10, on ? `lamp-${c.props.color || 'yellow'}` : 'fw') + L(-7, -7, 7, 7) + L(-7, 7, 7, -7) });
 loadDef({ type: 'e_buzzer', name: '부저', cat: '출력 (솔레노이드·램프)', tag: 'BZ', desc: '통전 시 울림.',
   body: (on) => L(0, -20, 0, -10) + L(0, 10, 0, 20) + P('M-10,-10 L-10,10 L10,10 L10,-10 A10,10 0 0 0 -10,-10 Z', on ? 'on' : 'fw') + (on ? P('M14,-8 Q20,0 14,8') + P('M18,-12 Q27,0 18,12') : '') });
+
+/* =====================================================================
+ *  3D 실습실 전용: 공급 유닛, 분기 티, 실린더 부착 센서, 전기 모듈(랙)
+ * ===================================================================*/
+const boxDraw = (w, h, title) => () => ({ b: R(-w / 2, -h / 2, w, h, 'fw') + T(0, 4, title, 'stxt', 'middle', 9), l: [] });
+const elJ = (ids) => ids.map((id) => ({ id, x: 0, y: 0, dir: 'none', kind: 'el', lab: id }));
+
+def({
+  type: 'p_supply3d', name: '공압 공급 유닛 (FRL+분배기)', dom: 'pn', cat: '3d', three: true,
+  desc: '서비스 유닛(필터·레귤레이터·압력계)과 8구 분배기. 출구 압력 설정.',
+  props: [{ k: 'p', l: '공급 압력', t: 'num', d: 6, min: 1, max: 10, step: 0.1, u: 'bar', live: true }],
+  ports: () => Array.from({ length: 8 }, (_, i) => ({ id: 'o' + (i + 1), x: -35 + i * 10, y: 20, dir: 'down', kind: 'pn', lab: '' })),
+  bbox: () => [-40, -20, 40, 20], draw: boxDraw(80, 40, '공압 공급 유닛'),
+  init(c, st) { st.on = true; },
+  press(c, st) { st.on = !st.on; },
+  fluid(c, st, k) { if (st.on) for (let i = 1; i <= 8; i++) k.Gp('o' + i, +c.props.p, 60); },
+});
+def({
+  type: 'h_supply3d', name: '유압 파워유닛 (P/T 분배블록)', dom: 'hy', cat: '3d', three: true,
+  desc: '펌프·전동기·릴리프·탱크와 P/T 분배블록(각 4구). 클릭으로 펌프 ON/OFF.',
+  props: [{ k: 'q', l: '펌프 토출량', t: 'num', d: 8, min: 0.5, max: 60, step: 0.5, u: 'L/min', live: true },
+    { k: 'p', l: '릴리프 설정 압력', t: 'num', d: 50, min: 5, max: 210, u: 'bar', live: true }],
+  ports: () => [...[1, 2, 3, 4].map((i) => ({ id: 'p' + i, x: -40 + i * 10, y: 20, dir: 'down', kind: 'hy', lab: 'P' })), ...[1, 2, 3, 4].map((i) => ({ id: 't' + i, x: i * 10, y: 20, dir: 'down', kind: 'hy', lab: 'T' }))],
+  bbox: () => [-40, -20, 40, 20], draw: boxDraw(80, 40, '유압 파워유닛'),
+  init(c, st) { st.on = true; },
+  press(c, st) { st.on = !st.on; },
+  fluid(c, st, k) {
+    if (st.on) k.Q('p1', (+c.props.q * 1000) / 60);
+    for (let i = 2; i <= 4; i++) k.G('p1', 'p' + i, 400);
+    k.check('p1', null, MED.hy.Gr, +c.props.p, 'rv');
+    for (let i = 1; i <= 4; i++) k.G('t' + i, null, 400);
+  },
+});
+for (const dom of ['pn', 'hy']) {
+  def({
+    type: `${dom === 'pn' ? 'p' : 'h'}_tee`, name: '분기 티 (T 커넥터)', dom, cat: '3d', three: true, desc: '호스를 3방향으로 분기.', props: [],
+    ports: () => [{ id: 'a', x: -10, y: 0, dir: 'left', kind: dom, lab: '' }, { id: 'b', x: 10, y: 0, dir: 'right', kind: dom, lab: '' }, { id: 'c', x: 0, y: 10, dir: 'down', kind: dom, lab: '' }],
+    bbox: () => [-10, -6, 10, 10], draw: () => ({ b: L(-10, 0, 10, 0) + L(0, 0, 0, 10) + C(0, 0, 2.5, 'fk'), l: [] }),
+    fluid(c, st, k) { const g = MED[dom].Gopen * 2; k.G('a', 'b', g); k.G('a', 'c', g); },
+  });
+}
+// 실린더 부착 센서: props.cyl(실린더 id), props.pos(mm)
+def({
+  type: 's3_reed', name: '근접 센서 (리드 스위치)', dom: 'el', cat: '3d', three: true, desc: '실린더 튜브에 부착. 피스톤이 위치에 오면 접점 닫힘 (2선식).',
+  props: [P_TAG('S1'), { k: 'cyl', l: '부착 실린더', t: 'cyl', d: '' }, { k: 'pos', l: '감지 위치', t: 'num', d: 0, min: 0, max: 1000, u: 'mm' }],
+  ports: () => elJ(['a', 'b']), bbox: () => [-10, -10, 10, 10], draw: boxDraw(20, 20, 'S'),
+  elec(c, st, k) { k.contact('a', 'b', !!(st.att || st.man)); },
+  press(c, st) { st.man = true; }, release(c, st) { st.man = false; },
+});
+def({
+  type: 's3_ls', name: '리밋 스위치 (롤러 레버형)', dom: 'el', cat: '3d', three: true, desc: '실린더 로드 끝 도그가 닿으면 작동 (COM-NO 닫힘, COM-NC 열림).',
+  props: [P_TAG('LS1'), { k: 'cyl', l: '작동 실린더', t: 'cyl', d: '' }, { k: 'pos', l: '작동 위치', t: 'num', d: 0, min: 0, max: 1000, u: 'mm' }],
+  ports: () => elJ(['C', 'NO', 'NC']), bbox: () => [-10, -10, 10, 10], draw: boxDraw(20, 20, 'LS'),
+  elec(c, st, k) { const a = !!(st.att || st.man); k.contact('C', 'NO', a); k.contact('C', 'NC', !a); },
+  press(c, st) { st.man = true; }, release(c, st) { st.man = false; },
+});
+
+// ---- 전기 모듈 (랙 장착) ----
+const MOD = (o) => def({ dom: 'el', cat: 'module', three: true, module: true, bbox: () => [-20, -20, 20, 20], draw: boxDraw(40, 40, o.short || 'M'), ...o });
+const range = (n) => Array.from({ length: n }, (_, i) => i);
+MOD({
+  type: 'm_psu', name: 'DC 24V 전원 공급기', short: 'PSU', props: [],
+  ports: () => elJ([...range(4).map((i) => 'P' + i), ...range(4).map((i) => 'N' + i)]),
+  elec(c, st, k) { for (const i of range(4)) { k.supply('P' + i, '+'); k.supply('N' + i, '0'); } },
+});
+MOD({
+  type: 'm_pb', name: '푸시버튼 스위치 모듈', short: 'PB', props: [{ k: 'base', l: '시작 번호', t: 'num', d: 1 }],
+  tags: (c) => range(3).map((i) => 'PB' + (+c.props.base + i)),
+  ports: () => elJ(range(3).flatMap((i) => [`${i}NOa`, `${i}NOb`, `${i}NCa`, `${i}NCb`])),
+  elec(c, st, k, sim) {
+    range(3).forEach((i) => { const a = !!sim.btn.get('PB' + (+c.props.base + i)); k.contact(`${i}NOa`, `${i}NOb`, a); k.contact(`${i}NCa`, `${i}NCb`, !a); });
+  },
+  press(c, st, sim, part) { if (part >= 0 && part < 3) sim.btn.set('PB' + (+c.props.base + part), true); },
+  release(c, st, sim) { range(3).forEach((i) => sim.btn.set('PB' + (+c.props.base + i), false)); },
+});
+MOD({
+  type: 'm_sel', name: '비상정지 · 셀렉터 스위치 모듈', short: 'SEL', props: [],
+  ports: () => elJ(['ENCa', 'ENCb', 'ENOa', 'ENOb', 'SNOa', 'SNOb', 'SNCa', 'SNCb']),
+  elec(c, st, k, sim) {
+    const e = !!sim.sw.get('EMG'), s = !!sim.sw.get('SS1');
+    k.contact('ENCa', 'ENCb', !e); k.contact('ENOa', 'ENOb', e);
+    k.contact('SNOa', 'SNOb', s); k.contact('SNCa', 'SNCb', !s);
+  },
+  press(c, st, sim, part) { const t = part === 0 ? 'EMG' : 'SS1'; sim.sw.set(t, !sim.sw.get(t)); },
+});
+MOD({
+  type: 'm_relay', name: '릴레이 모듈 (4c × 3)', short: 'RY', props: [{ k: 'base', l: '시작 번호', t: 'num', d: 1 }],
+  ports: () => elJ(range(3).flatMap((i) => [`${i}A1`, `${i}A2`, ...[1, 2, 3, 4].flatMap((j) => [`${i}C${j}`, `${i}NO${j}`, `${i}NC${j}`])])),
+  elec(c, st, k, sim) {
+    range(3).forEach((i) => {
+      const tag = 'R' + (+c.props.base + i);
+      k.load(`${i}A1`, `${i}A2`, (on) => sim.setCoil('relay', tag, on));
+      const a = !!sim.relay.get(tag);
+      for (const j of [1, 2, 3, 4]) { k.contact(`${i}C${j}`, `${i}NO${j}`, a); k.contact(`${i}C${j}`, `${i}NC${j}`, !a); }
+    });
+  },
+});
+MOD({
+  type: 'm_timer', name: '타이머 모듈 (2회로)', short: 'TM',
+  props: [{ k: 'd1', l: 'T1 설정 시간', t: 'num', d: 3, min: 0, max: 600, step: 0.1, u: 's', live: true }, { k: 'm1', l: 'T1 동작', t: 'sel', d: 'on', opts: [['on', 'ON 딜레이'], ['off', 'OFF 딜레이']] },
+    { k: 'd2', l: 'T2 설정 시간', t: 'num', d: 5, min: 0, max: 600, step: 0.1, u: 's', live: true }, { k: 'm2', l: 'T2 동작', t: 'sel', d: 'on', opts: [['on', 'ON 딜레이'], ['off', 'OFF 딜레이']] }],
+  ports: () => elJ(range(2).flatMap((i) => [`${i}A1`, `${i}A2`, ...[1, 2].flatMap((j) => [`${i}C${j}`, `${i}NO${j}`, `${i}NC${j}`])])),
+  elec(c, st, k, sim) {
+    range(2).forEach((i) => {
+      const tag = 'T' + (i + 1);
+      k.load(`${i}A1`, `${i}A2`, (on) => sim.setTimer(tag, on, c.props['m' + (i + 1)] || 'on', +c.props['d' + (i + 1)]));
+      if (!sim.timers.has(tag)) sim.setTimer(tag, false, c.props['m' + (i + 1)] || 'on', +c.props['d' + (i + 1)]);
+      const a = sim.timerOut(tag);
+      for (const j of [1, 2]) { k.contact(`${i}C${j}`, `${i}NO${j}`, a); k.contact(`${i}C${j}`, `${i}NC${j}`, !a); }
+    });
+  },
+});
+MOD({
+  type: 'm_counter', name: '카운터 모듈', short: 'CT', props: [{ k: 'preset', l: 'C1 설정값', t: 'num', d: 3, min: 1, max: 9999, live: true }],
+  ports: () => elJ(['A1', 'A2', 'R1', 'R2', ...[1, 2].flatMap((j) => [`C${j}`, `NO${j}`, `NC${j}`])]),
+  elec(c, st, k, sim) {
+    k.load('A1', 'A2', (on) => sim.setCounter('C1', on, null, +c.props.preset));
+    k.load('R1', 'R2', (on) => sim.setCounter('C1', null, on, null));
+    if (!sim.counters.has('C1')) sim.setCounter('C1', null, null, +c.props.preset);
+    const a = sim.counterOut('C1');
+    for (const j of [1, 2]) { k.contact(`C${j}`, `NO${j}`, a); k.contact(`C${j}`, `NC${j}`, !a); }
+  },
+});
+MOD({
+  type: 'm_lamp', name: '표시등 · 부저 모듈', short: 'LP', props: [],
+  ports: () => elJ([...range(3).flatMap((i) => [`${i}a`, `${i}b`]), 'BZa', 'BZb']),
+  init(c, st) { st.lamp = [false, false, false]; st.bz = false; },
+  elec(c, st, k) {
+    range(3).forEach((i) => k.load(`${i}a`, `${i}b`, (on) => { st.lamp[i] = on; }));
+    k.load('BZa', 'BZb', (on) => { st.bz = on; });
+  },
+});
 
 // 팔레트 정의
 export const PALETTE = {

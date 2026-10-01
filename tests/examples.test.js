@@ -1,18 +1,49 @@
 // 모든 예제 회로의 동작을 스크립트로 검증
 import { Sim } from '../js/sim.js';
 import { EXAMPLES } from '../js/examples.js';
+import { to3D } from '../js/convert3d.js';
+
+const MODE3D = process.argv.includes('--3d');
 
 let fails = 0;
 const ok = (c, m) => { if (!c) { fails++; console.log('   FAIL', m); } else console.log('   ok  ', m); };
 
 function mk(id) {
   const ex = EXAMPLES.find((e) => e.id === id);
-  const doc = ex.build();
+  const doc = MODE3D ? to3D(ex.build()) : ex.build();
   const sim = new Sim(doc);
-  const byTag = (tag, pred = () => true) => doc.components.find((c) => c.props.tag === tag && pred(c));
+  const byTag0 = (tag, pred = () => true) => doc.components.find((c) => c.props.tag === tag && pred(c));
+  let byTag = byTag0;
+  let press = (tag, lx = -1000) => { const c = byTag(tag, (c) => c.type !== 'e_relay'); sim.press(c.id, lx, 0); return c; };
+  let release = (tag) => { const c = byTag(tag); sim.release(c.id); };
+  if (MODE3D) {
+    // 3D 실습실: 랙 모듈의 버튼/스위치로 조작
+    const pbMod = (n) => doc.components.find((c) => c.type === 'm_pb' && n >= +c.props.base && n < +c.props.base + 3);
+    const sup = doc.components.find((c) => c.type.endsWith('supply3d'));
+    const lampMod = doc.components.find((c) => c.type === 'm_lamp');
+    byTag = (tag, pred) => {
+      if (tag === 'PU') return sup;
+      if (/^H\d/.test(tag)) return lampMod;
+      return byTag0(tag, pred);
+    };
+    const op = pAt => (c, pid) => pAt.call(sim, c, c && c.type === 'h_supply3d' && pid === 'P' ? 'p1' : pid);
+    sim.pAt = op(Sim.prototype.pAt);
+    press = (tag, lx = -1000) => {
+      const m = String(tag).match(/^PB(\d)$/);
+      if (m) { const md = pbMod(+m[1]); sim.press(md.id, +m[1] - +md.props.base); return md; }
+      if (tag === 'SW1' || tag === 'EMG') { const md = doc.components.find((c) => c.type === 'm_sel'); sim.press(md.id, tag === 'EMG' ? 0 : 1); return md; }
+      const c = byTag0(tag, (c) => !c.type.startsWith('s3_')); sim.press(c.id, lx, 0); return c;
+    };
+    release = (tag) => {
+      const m = String(tag).match(/^PB(\d)$/);
+      if (m) { sim.release(pbMod(+m[1]).id); return; }
+      const c = byTag0(tag, (c) => !c.type.startsWith('s3_'));
+      if (c) sim.release(c.id);
+    };
+    const lst = sim.st.get(lampMod.id);
+    Object.defineProperty(lst, 'on', { get: () => lst.lamp.some(Boolean) });
+  }
   const cyl = (tag) => sim.st.get(byTag(tag, (c) => c.type.includes('_cyl_')).id);
-  const press = (tag, lx = -1000) => { const c = byTag(tag, (c) => c.type !== 'e_relay'); sim.press(c.id, lx, 0); return c; };
-  const release = (tag) => { const c = byTag(tag); sim.release(c.id); };
   const tap = (tag, t = 0.2) => { press(tag); sim.run(t); release(tag); };
   // 조건이 될 때까지 실행, 경과 시간 반환
   const until = (fn, max = 20) => { let t = 0; while (!fn() && t < max) { sim.run(0.02); t += 0.02; } return fn() ? t : Infinity; };
@@ -22,8 +53,8 @@ const at0 = (s) => s.x < 0.5, atL = (s, L) => s.x > L - 0.5;
 
 function countCycles(T, tag, L, seconds) {
   let n = 0, front = false;
-  for (let t = 0; t < seconds; t += 0.02) {
-    T.sim.run(0.02);
+  for (let t = 0; t < seconds; t += 1 / 240) {
+    T.sim.step(1 / 240);
     const x = T.cyl(tag).x;
     if (!front && x > L - 0.5) { front = true; n++; }
     if (front && x < 0.5) front = false;
@@ -77,5 +108,5 @@ for (const ex of EXAMPLES) {
   if (!tests[ex.id]) { console.log('   (테스트 없음)'); fails++; continue; }
   try { tests[ex.id](); } catch (e) { fails++; console.log('   ERROR', e.stack); }
 }
-console.log(fails ? `\n${fails} FAILED` : `\nALL ${EXAMPLES.length} EXAMPLES PASSED`);
+console.log(fails ? `\n${fails} FAILED` : `\nALL ${EXAMPLES.length} EXAMPLES PASSED${MODE3D ? ' (3D 실습실 변환)' : ''}`);
 process.exit(fails ? 1 : 0);

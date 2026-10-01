@@ -46,7 +46,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('   FAIL', m); } else cons
   await page.click('[data-home="examples"]');
   await page.waitForTimeout(200);
   ok((await page.$$('.excard')).length >= 20, '예제 목록 표시');
-  await page.click('.excard[data-ex="ep4"]');
+  await page.click('[data-ex="ep4"][data-how="2d"]');
   await page.waitForTimeout(500);
   ok((await page.inputValue('#docName')).includes('연속 왕복'), '예제 로드됨');
   await page.click('#btnStart');

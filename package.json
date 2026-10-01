@@ -6,7 +6,8 @@
   "description": "웹 공유압 실습 시뮬레이터 (공압·유압·전기 시퀀스)",
   "scripts": {
     "start": "npx serve -l 5173 .",
-    "test": "node tests/engine.test.js && node tests/examples.test.js",
-    "test:e2e": "NODE_PATH=$(npm root -g) node tests/e2e.test.cjs"
+    "test": "node tests/engine.test.js && node tests/examples.test.js && node tests/examples.test.js --3d",
+    "test:e2e": "NODE_PATH=$(npm root -g) node tests/e2e.test.cjs",
+    "test:e2e3d": "NODE_PATH=$(npm root -g) node tests/e2e3d.test.cjs"
   }
 }

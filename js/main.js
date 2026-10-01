@@ -4,6 +4,8 @@ import { Editor, SYM_CSS } from './editor.js';
 import { Trainer } from './trainer.js';
 import { Chart } from './chart.js';
 import { EXAMPLES } from './examples.js';
+import { initRoomUI } from './roomui.js';
+import { to3D, empty3D } from './convert3d.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -44,6 +46,33 @@ const ed = new Editor($('#canvas'));
 const trainer = new Trainer($('#trainer'), ed);
 const chart = new Chart($('#chart'), ed);
 window.__ed = ed;
+let R = null;
+function room() {
+  if (!R) {
+    R = initRoomUI({
+      modal: (t, h) => modal(t, h),
+      thumbSVG: (t, h) => thumbSVG(t, h),
+      onHome: () => showHome(),
+      onOpen2D: (d3) => {
+        if (!d3.src) { modal('2D 회로도', '<p>이 실습은 3D 실습실에서 직접 구성한 것이라 연결된 2D 회로도가 없습니다.<br>예제를 3D로 열면 원본 2D 회로도를 함께 볼 수 있습니다.</p>'); return; }
+        R.hide();
+        ed.load(d3.src);
+        setTab(d3.src.mode || 'pn');
+        status('2D 회로 작도실 — 3D 실습의 원본 회로도');
+      },
+      loadAnswer: (d3) => { const full = to3D(d3.src); R.open(full); },
+    });
+  }
+  return R;
+}
+function open3D(doc) {
+  hideHome();
+  closeModal();
+  const r = room();
+  r.show();
+  r.open(doc);
+  try { localStorage.setItem('hpt.last', '3d'); } catch (_) { /* 무시 */ }
+}
 
 let viewMode = 'circuit';
 function setView(v) {
@@ -425,6 +454,7 @@ function cmd(c) {
     case 'v-split': setView('split'); break;
     case 'v-trainer': setView('trainer'); break;
     case 'examples': showExamples(); break;
+    case 'to3d': ed.stopSim(); open3D(to3D(ed.doc)); break;
     case 'help': showHelp(); break;
     case 'keys': showKeys(); break;
     case 'about': showAbout(); break;
@@ -462,7 +492,7 @@ $('#fileInput').addEventListener('change', async (e) => {
 const MENUS = [
   ['파일', [['새 공압 회로', 'new-pn', 'Ctrl+N'], ['새 유압 회로', 'new-hy'], ['열기…', 'open', 'Ctrl+O'], ['저장 (파일로 내려받기)', 'save', 'Ctrl+S'], '-', ['SVG로 내보내기', 'svg'], ['PNG 이미지로 내보내기', 'png'], ['인쇄', 'print', 'Ctrl+P'], '-', ['메인 화면', 'home']]],
   ['편집', [['실행 취소', 'undo', 'Ctrl+Z'], ['다시 실행', 'redo', 'Ctrl+Y'], '-', ['복사', 'copy', 'Ctrl+C'], ['붙여넣기', 'paste', 'Ctrl+V'], ['복제', 'dup', 'Ctrl+D'], ['삭제', 'delete', 'Del'], ['전체 선택', 'selall', 'Ctrl+A'], '-', ['시계 방향 회전', 'rotate', 'R'], ['반시계 방향 회전', 'rotateccw', 'Shift+R'], ['좌우 반전', 'flip', 'M'], ['배관 경로 자동 정리', 'clearpts']]],
-  ['보기', [['확대', 'zoomin', '휠↑'], ['축소', 'zoomout', '휠↓'], ['화면 맞춤', 'fit', 'F'], '-', ['회로 작도실', 'v-circuit', '1'], ['회로도 + 실습장비 분할', 'v-split', '2'], ['가상 실습장비', 'v-trainer', '3'], '-', ['변위-시간 선도', 'chart', 'G']]],
+  ['보기', [['3D 실습실로 보내기', 'to3d'], '-', ['확대', 'zoomin', '휠↑'], ['축소', 'zoomout', '휠↓'], ['화면 맞춤', 'fit', 'F'], '-', ['회로 작도실', 'v-circuit', '1'], ['회로도 + 실습장비 분할', 'v-split', '2'], ['가상 실습장비', 'v-trainer', '3'], '-', ['변위-시간 선도', 'chart', 'G']]],
   ['시뮬레이션', [['시작 / 계속', 'simstart', 'F9'], ['일시 정지', 'simpause', 'F8'], ['단계 실행 (0.1초)', 'simstep', 'F10'], ['초기화 후 재시작', 'simreset'], ['정지 (편집 모드)', 'simstop', 'Esc'], '-', ['회로 검사', 'check']]],
   ['예제·과제', null],
   ['도움말', [['사용 방법', 'help', 'F1'], ['단축키', 'keys'], ['프로그램 정보', 'about']]],
@@ -529,6 +559,13 @@ $('#ctxmenu').addEventListener('click', (e) => { const b = e.target.closest('but
 /* ---------------- 키보드 ---------------- */
 document.addEventListener('keydown', (e) => {
   const typing = e.target.matches('input, select, textarea');
+  if (document.body.classList.contains('mode3d')) {
+    if (typing) return;
+    if (e.key === 'Escape' && !$('#modal').classList.contains('hidden')) { closeModal(); return; }
+    if (e.key === 'F9') { e.preventDefault(); R.room.startSim(); return; }
+    if (R && R.key(e)) e.preventDefault();
+    return;
+  }
   const mod = e.ctrlKey || e.metaKey;
   const k = e.key.toLowerCase();
   if (e.key === 'F9') { e.preventDefault(); cmd('simstart'); return; }
@@ -564,23 +601,30 @@ $('#modalClose').addEventListener('click', closeModal);
 $('#modal').addEventListener('click', (e) => {
   if (e.target.id === 'modal') closeModal();
   const ex = e.target.closest('[data-ex]');
-  if (ex) { closeModal(); loadExample(ex.dataset.ex); }
+  if (ex) { closeModal(); loadExample(ex.dataset.ex, ex.dataset.how); }
 });
 
 function showExamples() {
-  let h = '<p class="muted">공유압기능사 · 설비보전기사 실기 유형을 참고하여 구성한 회로입니다. 선택하면 회로와 과제 설명이 열립니다.</p>';
+  let h = '<p class="muted">공유압기능사 · 설비보전기사 실기 유형을 참고하여 구성한 회로입니다. <b>3D 실습실(완성)</b>은 부품·호스·전선이 모두 연결된 상태로, <b>3D 배선 과제</b>는 부품만 설치된 상태로 열려 직접 배선한 뒤 정답과 비교할 수 있습니다.</p>';
   let g = '';
   for (const ex of EXAMPLES) {
     if (ex.group !== g) { if (g) h += '</div></div>'; g = ex.group; h += `<div class="exgroup"><h4>${esc(g)}</h4><div class="exgrid">`; }
-    h += `<button class="excard" data-ex="${ex.id}"><b>${esc(ex.title)}</b><span>${esc(ex.summary)}</span><div class="tags">${(ex.tags || []).map((t) => `<em>${esc(t)}</em>`).join('')}</div></button>`;
+    h += `<div class="excard"><b>${esc(ex.title)}</b><span>${esc(ex.summary)}</span><div class="tags">${(ex.tags || []).map((t) => `<em>${esc(t)}</em>`).join('')}</div><div class="exbtns"><button class="b3" data-ex="${ex.id}" data-how="3d">3D 실습실 (완성)</button><button data-ex="${ex.id}" data-how="ex3d">3D 배선 과제</button><button data-ex="${ex.id}" data-how="2d">2D 회로도</button></div></div>`;
   }
   h += '</div></div>';
   modal('예제 · 과제', h);
 }
-function loadExample(id) {
+function loadExample(id, how = '2d') {
   const ex = EXAMPLES.find((e) => e.id === id);
   if (!ex) return;
   const doc = ex.build();
+  if (how === '3d' || how === 'ex3d') {
+    const d3 = to3D(doc, { exercise: how === 'ex3d' });
+    if (how === 'ex3d') { d3.name = doc.name + ' (배선 과제)'; }
+    open3D(d3);
+    return;
+  }
+  if (R) R.hide();
   ed.load(doc);
   setTab(doc.mode);
   hideHome();
@@ -634,7 +678,10 @@ function setTab(m) {
 }
 function showHome() {
   let saved = null;
-  try { saved = JSON.parse(localStorage.getItem('hpt.autosave') || 'null'); } catch (_) { saved = null; }
+  try {
+    const k = localStorage.getItem('hpt.last') === '3d' && localStorage.getItem('hpt.autosave3d') ? 'hpt.autosave3d' : 'hpt.autosave';
+    saved = JSON.parse(localStorage.getItem(k) || 'null');
+  } catch (_) { saved = null; }
   const has = saved && saved.components && saved.components.length;
   $('#homeResume').disabled = !has;
   $('#resumeInfo').textContent = has ? `"${saved.name}" (${saved.components.length}개 부품)` : '저장된 작업이 없습니다';
@@ -645,10 +692,14 @@ $('#home').addEventListener('click', (e) => {
   const b = e.target.closest('[data-home]');
   if (!b) { if (e.target.id === 'home' && ed.doc.components.length) hideHome(); return; }
   const a = b.dataset.home;
-  if (a === 'pn' || a === 'hy') { ed.newDoc(a); ed.doc.name = a === 'hy' ? '새 유압 회로' : '새 공압 회로'; ed.changed(false); setTab(a); hideHome(); }
+  if (a === 'pn3d' || a === 'hy3d') { open3D(empty3D(a === 'hy3d' ? 'hy' : 'pn')); return; }
+  if (a === 'pn' || a === 'hy') { if (R) R.hide(); ed.newDoc(a); ed.doc.name = a === 'hy' ? '새 유압 회로' : '새 공압 회로'; ed.changed(false); setTab(a); hideHome(); try { localStorage.setItem('hpt.last', '2d'); } catch (_) { /* 무시 */ } }
   if (a === 'examples') { hideHome(); showExamples(); }
   if (a === 'resume') {
-    try { const d = JSON.parse(localStorage.getItem('hpt.autosave')); ed.load(d); setTab(d.mode || 'pn'); hideHome(); } catch (_) { /* 무시 */ }
+    try {
+      if (localStorage.getItem('hpt.last') === '3d' && localStorage.getItem('hpt.autosave3d')) { open3D(JSON.parse(localStorage.getItem('hpt.autosave3d'))); return; }
+      const d = JSON.parse(localStorage.getItem('hpt.autosave')); if (R) R.hide(); ed.load(d); setTab(d.mode || 'pn'); hideHome();
+    } catch (_) { /* 무시 */ }
   }
   if (a === 'help') showHelp();
 });
@@ -660,6 +711,7 @@ renderPalette();
 renderInspector();
 ed.simState();
 const qs = new URLSearchParams(location.search);
-if (qs.get('ex')) { loadExample(qs.get('ex')); if (qs.get('view')) setView(qs.get('view')); }
+if (qs.get('ex')) { loadExample(qs.get('ex'), qs.get('mode') || '2d'); if (qs.get('view')) setView(qs.get('view')); }
+else if (qs.get('room')) open3D(empty3D(qs.get('room') === 'hy' ? 'hy' : 'pn'));
 else showHome();
 window.addEventListener('resize', () => { chart.resize(); chart.draw(); trainer.fit(); });
