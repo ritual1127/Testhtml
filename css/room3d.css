@@ -80,3 +80,6 @@ body.r3placing .r3-canvas { cursor: crosshair; }
   .home-grid3 { grid-template-columns: 1fr; padding: 16px 16px 0; }
   .hcard.big svg { width: 110px; flex-basis: 110px; }
 }
+
+#r3info { position: absolute; left: 12px; bottom: 12px; background: rgba(12, 22, 36, .82); border: 1px solid #36506f; border-radius: 8px; padding: 7px 11px; font-size: 12px; line-height: 1.55; color: #e7eef7; pointer-events: none; }
+#r3info:empty { display: none; }

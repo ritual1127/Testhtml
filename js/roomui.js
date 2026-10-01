@@ -34,6 +34,7 @@ export function initRoomUI(opts) {
   const { modal, thumbSVG, onOpen2D, onHome } = opts;
   let cat = -1;
   let dirtyT = null;
+  let fontsHooked = false;
 
   // ---------- 하단 분류 ----------
   function renderCats() {
@@ -52,10 +53,15 @@ export function initRoomUI(opts) {
   });
   $('#r3tray').addEventListener('click', (e) => {
     if (e.target.closest('[data-close]')) { cat = -1; renderCats(); return; }
+  });
+  // 클릭 → 보드 클릭으로 설치, 또는 끌어다 놓기
+  $('#r3tray').addEventListener('pointerdown', (e) => {
     const it = e.target.closest('.r3item');
     if (!it) return;
+    e.preventDefault();
     if (room.sim) { status('시뮬레이션을 정지한 후 부품을 설치하세요.'); return; }
     room.beginPlace(it.dataset.type);
+    if (room.mode === 'place') room.placeByDrag = true;
     cat = -1;
     renderCats();
   });
@@ -120,6 +126,16 @@ export function initRoomUI(opts) {
 
   // ---------- 상태 ----------
   function status(m) { $('#r3status').textContent = m || ''; }
+  function infoBox() {
+    const d = room.doc;
+    const sup = d.components.find((c) => c.type.endsWith('supply3d'));
+    if (!sup) { $('#r3info').innerHTML = ''; return; }
+    const sim = room.sim;
+    const lines = d.mode === 'hy'
+      ? [`토출압력(릴리프): ${sup.props.p} bar`, `펌프유량: ${sup.props.q} L/min`, sim ? `P라인 압력: ${sim.pAt(sup, 'p1').toFixed(1)} bar` : '']
+      : [`공급압력: ${sup.props.p} bar`, sim ? `공급: ${sim.st.get(sup.id).on ? 'ON' : 'OFF (밸브 잠김)'}` : ''];
+    $('#r3info').innerHTML = lines.filter(Boolean).map((l) => `<div>${esc(l)}</div>`).join('');
+  }
   room.addEventListener('status', (e) => status(e.detail));
   room.addEventListener('tip', (e) => {
     const t = $('#r3tip');
@@ -136,6 +152,7 @@ export function initRoomUI(opts) {
     clearTimeout(dirtyT);
     dirtyT = setTimeout(() => { try { localStorage.setItem('hpt.autosave3d', JSON.stringify(stripDoc(room.doc))); } catch (_) { /* 무시 */ } }, 500);
     if (!room.sim) panel();
+    infoBox();
   });
   room.addEventListener('select', () => { if (!room.sim) panel(); });
   room.addEventListener('editprops', () => panel());
@@ -144,7 +161,7 @@ export function initRoomUI(opts) {
   room.addEventListener('frame', () => {
     $('#r3clock').textContent = `t = ${room.sim.t.toFixed(2)} s`;
     const now = performance.now();
-    if (now - lastP > 160) { lastP = now; livePanel(); }
+    if (now - lastP > 160) { lastP = now; livePanel(); infoBox(); }
   });
   room.addEventListener('simstate', () => {
     const on = !!room.sim;
@@ -155,6 +172,7 @@ export function initRoomUI(opts) {
     if (!on) $('#r3clock').textContent = 't = 0.00 s';
     liveBuilt = false;
     panel();
+    infoBox();
   });
 
   // ---------- 패널 ----------
@@ -362,7 +380,15 @@ export function initRoomUI(opts) {
   return {
     room,
     open(doc) { room.load(doc); cat = -1; renderCats(); panel(); $('#r3title').textContent = `${room.doc.mode === 'hy' ? '유압' : '공압'} 실습실 — ${room.doc.name || ''}`; },
-    show() { document.body.classList.add('mode3d'); room.start(); requestAnimationFrame(() => room.resize()); },
+    show() {
+      document.body.classList.add('mode3d');
+      room.start();
+      requestAnimationFrame(() => room.resize());
+      if (!fontsHooked && document.fonts && document.fonts.status !== 'loaded') {
+        fontsHooked = true;
+        document.fonts.ready.then(() => { if (!room.sim) room.rebuild(); });
+      }
+    },
     hide() { document.body.classList.remove('mode3d'); room.stop(); room.stopSim(); },
     key: (e) => room.key(e),
     renderCats,

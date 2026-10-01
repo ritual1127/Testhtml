@@ -56,7 +56,8 @@ const ok = (c, m) => { if (!c) { fails++; console.log('   FAIL', m); } else cons
   const nComp = await R(() => window.__room.doc.components.filter((c) => !(c.b3 && c.b3.rack != null) && !c.type.endsWith('supply3d')).length);
   ok(nComp === 2, `실린더·밸브 설치 (${nComp})`);
   const cyl = await compId('p_cyl_double'), val = await compId('pv52_sol'), sup = await compId('p_supply3d'), psu = await compId('m_psu'), pb = await R(() => window.__room.doc.components.find((c) => c.type === 'm_pb' && +c.props.base === 1).id);
-  ok(Math.abs((await R((id) => window.__room.doc.components.find((c) => c.id === id).b3.v, cyl)) - 62.5) < 3, '보드 슬롯에 스냅');
+  const vv = await R((id) => window.__room.doc.components.find((c) => c.id === id).b3.v, cyl);
+  ok(Math.abs(vv - 62.5) < 3 && Math.abs(vv / 2.5 - Math.round(vv / 2.5)) < 1e-6, `보드 슬롯에 스냅 (v=${vv})`);
 
   console.log('[3] 피팅 클릭으로 호스 연결');
   const hose = async (a, ap, b, bp) => { await click(await end(a, ap)); await click(await end(b, bp)); };
@@ -69,6 +70,27 @@ const ok = (c, m) => { if (!c) { fails++; console.log('   FAIL', m); } else cons
   await click(await end(cyl, 'B'));
   ok(await R(() => window.__room.doc.wires.length) === 3, '연결된 피팅에는 추가 호스 불가');
   await page.keyboard.press('Escape');
+
+  console.log('[3b] 끌어다 놓기 설치 + 드래그로 호스 연결');
+  await page.click('#r3cats [data-cat="5"]');
+  await page.waitForTimeout(150);
+  const it = await page.$('.r3item[data-type="p_gauge"]');
+  const ib = await it.boundingBox();
+  const gxy = await R(() => window.__room.projectBoard(30, 30));
+  await page.mouse.move(ib.x + ib.width / 2, ib.y + ib.height / 2);
+  await page.mouse.down();
+  for (let i = 1; i <= 8; i++) { await page.mouse.move(ib.x + (gxy[0] - ib.x) * i / 8, ib.y + (gxy[1] - ib.y) * i / 8); await page.waitForTimeout(40); }
+  await page.mouse.up();
+  await page.waitForTimeout(200);
+  const gauge = await R(() => (window.__room.doc.components.find((c) => c.type === 'p_gauge') || {}).id);
+  ok(!!gauge && (await R(() => window.__room.mode)) === 'idle', '압력계 끌어다 놓기 설치');
+  const a = await end(sup, 'o2'), b = await end(gauge, '1');
+  await page.mouse.move(a[0], a[1]);
+  await page.mouse.down();
+  for (let i = 1; i <= 8; i++) { await page.mouse.move(a[0] + (b[0] - a[0]) * i / 8, a[1] + (b[1] - a[1]) * i / 8); await page.waitForTimeout(40); }
+  await page.mouse.up();
+  await page.waitForTimeout(200);
+  ok(await R(() => window.__room.doc.wires.length) === 4, '드래그로 호스 연결 (공급 출구 → 압력계)');
 
   console.log('[4] 잭 클릭으로 전선 연결');
   await R(() => window.__room.setView('all', true));

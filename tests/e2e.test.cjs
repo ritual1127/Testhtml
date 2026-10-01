@@ -60,28 +60,21 @@ const ok = (c, m) => { if (!c) { fails++; console.log('   FAIL', m); } else cons
   const x1 = await cylX('1A');
   ok(x1 > 10, `PB1 클릭 → 실린더 전진 시작 (x=${x1.toFixed(0)})`);
   await shot('e2e-01-sim-circuit');
-  await page.click('[data-view="split"]');
-  await page.waitForTimeout(1200);
-  await shot('e2e-02-split');
-  await page.click('[data-view="trainer"]');
   await page.click('#btnChart');
   await page.waitForTimeout(1500);
-  await shot('e2e-03-trainer-chart');
-  ok(await page.evaluate(() => document.querySelectorAll('#trainer .t-mod').length) >= 5, '실습장비 모듈 렌더링');
-  // 실습장비의 PB2 (정지) 클릭
-  const pb2 = await page.evaluate(() => { const g = [...document.querySelectorAll('#trainer .t-mod')].find((e) => e.dataset.group === 'pb:PB2'); const r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+  await shot('e2e-03-chart');
+  const pb2 = await compXY('PB2', 'e_pb');
   await page.mouse.move(pb2[0], pb2[1]);
   await page.mouse.down();
   await page.waitForTimeout(200);
   await page.mouse.up();
   await page.waitForTimeout(3500);
-  ok((await cylX('1A')) < 1, '실습장비에서 PB2 클릭 → 후진 위치 정지');
+  ok((await cylX('1A')) < 1, 'PB2 클릭 → 후진 위치 정지');
   await page.click('#btnStop');
   await page.waitForTimeout(200);
   ok(!(await page.evaluate(() => !!window.__ed.sim)), '정지 → 편집 모드');
 
   console.log('[2] 새 회로 작도: 드래그 배치 + 배선 + 시뮬레이션');
-  await page.click('[data-view="circuit"]');
   await page.click('#btnChart');
   await page.evaluate(() => { window.__ed.newDoc('pn'); });
   await page.waitForTimeout(200);
@@ -142,7 +135,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('   FAIL', m); } else cons
   await page.waitForTimeout(200);
   await page.mouse.up();
   await page.waitForTimeout(2600);
-  await shot('e2e-06-hy-split');
+  await shot('e2e-06-hy');
   ok((await cylX('A1')) > 150, '유압 실린더 전진');
 
   console.log('[4] 회로 검사 · 내보내기');

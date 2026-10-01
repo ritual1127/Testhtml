@@ -185,6 +185,15 @@ export class Room3D extends EventTarget {
     this.boardWorldPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(this.boardNormal, new THREE.Vector3(0, BOARD_Y, 0));
   }
 
+  focusOn(cid) {
+    const m = this.models.get(cid);
+    if (!m) return;
+    const b = new THREE.Box3().setFromObject(m.root);
+    const c = b.getCenter(new THREE.Vector3());
+    const r = Math.max(14, b.getSize(new THREE.Vector3()).length() * 0.9);
+    const dir = this.camera.position.clone().sub(this.controls.target).normalize();
+    this.camAnim = { p0: this.camera.position.clone(), t0: this.controls.target.clone(), p: c.clone().addScaledVector(dir, r * 2.2), t: c, k: 0 };
+  }
   setView(v, instant) {
     const views = {
       all: [new THREE.Vector3(-4, 170, 142), new THREE.Vector3(-4, 141, -14)],
@@ -528,7 +537,12 @@ export class Room3D extends EventTarget {
     this.host.addEventListener('pointerdown', (e) => this.onDown(e), true);
     el.addEventListener('pointermove', (e) => this.onMove(e));
     window.addEventListener('pointerup', (e) => this.onUp(e));
-    el.addEventListener('dblclick', (e) => { const h = this.pick(e, ['comp']); if (h && !this.sim) this.emit('editprops', h.cid); });
+    el.addEventListener('dblclick', (e) => {
+      const h = this.pick(e, ['comp', 'port', 'jack']);
+      if (!h || !h.cid) return;
+      this.focusOn(h.cid);
+      if (!this.sim) this.emit('editprops', h.cid);
+    });
     new ResizeObserver(() => this.resize()).observe(this.host);
   }
 
@@ -561,7 +575,7 @@ export class Room3D extends EventTarget {
     if (hit && (hit.kind === 'port' || hit.kind === 'jack')) {
       this.controls.enabled = false;
       if (this.mode === 'connect') this.finishConnect(hit);
-      else this.beginConnect(hit);
+      else { this.beginConnect(hit); this.connectByDrag = true; }
       return;
     }
     if (this.mode === 'connect') { this.cancel(); return; }
@@ -594,6 +608,7 @@ export class Room3D extends EventTarget {
       return;
     }
     if (this.mode === 'place' && this.placing) {
+      this.placeMoved = (this.placeMoved || 0) + 1;
       const p = this.boardPoint(e);
       if (p) {
         const c = this.placing;
@@ -603,6 +618,7 @@ export class Room3D extends EventTarget {
       }
       return;
     }
+    if (e.buttons && this.mode === 'connect') { this.updatePreview(e); return; }
     if (e.buttons) return;
     // 호버
     const hit = this.pick(e);
@@ -639,6 +655,16 @@ export class Room3D extends EventTarget {
   onUp(e) {
     this.controls.enabled = true;
     this.invalidate();
+    if (this.mode === 'place' && this.placeByDrag) {
+      this.placeByDrag = false;
+      if (e.target === this.renderer.domElement && this.placeMoved > 2) { this.commitPlace(e); return; }
+    }
+    if (this.mode === 'connect' && this.down && this.down.moved && this.connectByDrag) {
+      const hit = this.pick(e, ['port', 'jack']);
+      this.connectByDrag = false;
+      if (hit && !(hit.cid === this.pending.cid && hit.pid === this.pending.pid)) { this.finishConnect(hit); this.down = null; return; }
+    }
+    this.connectByDrag = false;
     if (this.pressed) { this.sim && this.sim.release(this.pressed); this.pressed = null; this.paint(); }
     if (this.drag) { if (this.drag.moved) { this.changed(); this.emit('select'); } this.drag = null; }
     this.down = null;
@@ -723,6 +749,7 @@ export class Room3D extends EventTarget {
     this.models.set(c.id, buildModel(c));
     this.place(c);
     this.placing = c;
+    this.placeMoved = 0;
     this.mode = 'place';
     this.emit('status', `${REG[type].name}: 보드 위 원하는 위치를 클릭하여 고정하세요 (Esc 취소)`);
     this.emit('modechange');

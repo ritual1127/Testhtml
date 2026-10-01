@@ -492,7 +492,7 @@ $('#fileInput').addEventListener('change', async (e) => {
 const MENUS = [
   ['파일', [['새 공압 회로', 'new-pn', 'Ctrl+N'], ['새 유압 회로', 'new-hy'], ['열기…', 'open', 'Ctrl+O'], ['저장 (파일로 내려받기)', 'save', 'Ctrl+S'], '-', ['SVG로 내보내기', 'svg'], ['PNG 이미지로 내보내기', 'png'], ['인쇄', 'print', 'Ctrl+P'], '-', ['메인 화면', 'home']]],
   ['편집', [['실행 취소', 'undo', 'Ctrl+Z'], ['다시 실행', 'redo', 'Ctrl+Y'], '-', ['복사', 'copy', 'Ctrl+C'], ['붙여넣기', 'paste', 'Ctrl+V'], ['복제', 'dup', 'Ctrl+D'], ['삭제', 'delete', 'Del'], ['전체 선택', 'selall', 'Ctrl+A'], '-', ['시계 방향 회전', 'rotate', 'R'], ['반시계 방향 회전', 'rotateccw', 'Shift+R'], ['좌우 반전', 'flip', 'M'], ['배관 경로 자동 정리', 'clearpts']]],
-  ['보기', [['3D 실습실로 보내기', 'to3d'], '-', ['확대', 'zoomin', '휠↑'], ['축소', 'zoomout', '휠↓'], ['화면 맞춤', 'fit', 'F'], '-', ['회로 작도실', 'v-circuit', '1'], ['회로도 + 실습장비 분할', 'v-split', '2'], ['가상 실습장비', 'v-trainer', '3'], '-', ['변위-시간 선도', 'chart', 'G']]],
+  ['보기', [['3D 실습실로 보내기 (자동 배치·배선)', 'to3d'], '-', ['확대', 'zoomin', '휠↑'], ['축소', 'zoomout', '휠↓'], ['화면 맞춤', 'fit', 'F'], '-', ['변위-시간 선도', 'chart', 'G']]],
   ['시뮬레이션', [['시작 / 계속', 'simstart', 'F9'], ['일시 정지', 'simpause', 'F8'], ['단계 실행 (0.1초)', 'simstep', 'F10'], ['초기화 후 재시작', 'simreset'], ['정지 (편집 모드)', 'simstop', 'Esc'], '-', ['회로 검사', 'check']]],
   ['예제·과제', null],
   ['도움말', [['사용 방법', 'help', 'F1'], ['단축키', 'keys'], ['프로그램 정보', 'about']]],
@@ -581,9 +581,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === ' ') { ed.spaceDown = true; e.preventDefault(); return; }
   if (!mod && !ed.sim) {
     if (k === 'f') { cmd('fit'); return; }
-    if (k === '1') { setView('circuit'); return; }
-    if (k === '2') { setView('split'); return; }
-    if (k === '3') { setView('trainer'); return; }
+    if (k === '3') { cmd('to3d'); return; }
   }
   if (!mod && k === 'g') { toggleChart(); return; }
   if (ed.key(e)) e.preventDefault();
@@ -652,14 +650,14 @@ function showHelp() {
   <ul><li><b>▶ 시작</b>을 누르면 압력이 있는 관로는 색으로 표시되고(공압: 파랑, 유압: 파랑→빨강), 통전된 전선은 빨간색이 됩니다.</li>
   <li>푸시버튼·누름 밸브는 누르고 있는 동안, 유지형 스위치·디텐트 레버는 클릭할 때마다 동작합니다. 펌프/파워유닛을 클릭하면 ON/OFF 됩니다.</li>
   <li>오른쪽 <b>실시간 조정</b>에서 교축 밸브 개도, 릴리프 압력, 타이머 시간, 부하 등을 바꾸며 결과를 비교할 수 있습니다.</li>
-  <li><b>실습장비</b> 보기에서는 회로가 가상 실습 장비(트레이너 패널) 위에 배치되어 동일하게 동작합니다. 장비의 버튼도 직접 누를 수 있습니다.</li>
+  <li><b>3D 실습실 ▶</b> 버튼을 누르면 회로가 3D 실습 장비에 자동으로 설치·배관·배선되어 동일하게 동작합니다.</li>
   <li><b>선도</b> 버튼으로 실린더의 변위-시간 선도와 솔레노이드/릴레이 동작을 확인합니다.</li></ul>
   <h4>4. 저장</h4>
   <ul><li>작업 내용은 브라우저에 자동 저장되며(메인 화면 → 이어서 하기), 파일 → 저장으로 .json 파일을 내려받아 보관/제출할 수 있습니다.</li></ul></div>`);
 }
 function showKeys() {
   modal('단축키', `<div class="help"><table><tbody>
-  ${[['Ctrl+Z / Ctrl+Y', '실행 취소 / 다시 실행'], ['Ctrl+C / Ctrl+V / Ctrl+D', '복사 / 붙여넣기 / 복제'], ['Delete', '삭제'], ['R / Shift+R', '회전'], ['M', '좌우 반전'], ['방향키', '선택 부품 이동'], ['휠 / Space+드래그 / 우클릭 드래그', '확대·축소 / 화면 이동'], ['F', '화면 맞춤'], ['1 / 2 / 3', '회로도 / 분할 / 실습장비 보기'], ['G', '변위-시간 선도'], ['F9 / F8 / F10', '시작 / 일시정지 / 단계 실행'], ['Esc', '취소 · 시뮬레이션 정지'], ['Ctrl+S / Ctrl+O', '저장 / 열기']].map(([k, v]) => `<tr><td><kbd>${k}</kbd></td><td>${v}</td></tr>`).join('')}
+  ${[['Ctrl+Z / Ctrl+Y', '실행 취소 / 다시 실행'], ['Ctrl+C / Ctrl+V / Ctrl+D', '복사 / 붙여넣기 / 복제'], ['Delete', '삭제'], ['R / Shift+R', '회전'], ['M', '좌우 반전'], ['방향키', '선택 부품 이동'], ['휠 / Space+드래그 / 우클릭 드래그', '확대·축소 / 화면 이동'], ['F', '화면 맞춤'], ['3', '3D 실습실로 보내기'], ['G', '변위-시간 선도'], ['F9 / F8 / F10', '시작 / 일시정지 / 단계 실행'], ['Esc', '취소 · 시뮬레이션 정지'], ['Ctrl+S / Ctrl+O', '저장 / 열기']].map(([k, v]) => `<tr><td><kbd>${k}</kbd></td><td>${v}</td></tr>`).join('')}
   </tbody></table></div>`);
 }
 function showAbout() {
