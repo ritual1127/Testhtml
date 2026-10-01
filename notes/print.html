@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>유압제어 실습과제 핵심 암기 노트</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  @page { size: A4; margin: 9mm 10mm 9mm; }
+  html, body { background: #fff !important; }
+  body {
+    font-family: "Noto Sans KR", "NanumGothic", sans-serif !important;
+    font-size: 10.2pt; line-height: 1.45; color: #000 !important; margin: 0;
+  }
+  b { font-weight: 800; }
+  .page { break-after: page; height: 278mm; overflow: hidden; display: flex; flex-direction: column; gap: 2.2mm; }
+  .page:last-child { break-after: auto; }
+  header { display: flex; align-items: baseline; gap: 8px; border-bottom: 2px solid #000; padding-bottom: 1.5mm; }
+  header h1 { font-size: 15pt; margin: 0; color: #000; font-weight: 800; }
+  header .sub { font-size: 10pt; font-weight: 700; color: #000; }
+  .flow { font-size: 10pt; border: 1px solid #000; padding: 1.2mm 2.5mm; }
+  .top { display: grid; grid-template-columns: 80mm 1fr; gap: 2.5mm; align-items: start; }
+  .fig { border: 1px solid #000; padding: 1mm; display: flex; justify-content: center; }
+  .fig svg { width: 100%; height: auto; max-height: 96mm; display: block; }
+  .right { display: flex; flex-direction: column; gap: 2.2mm; }
+  .box { border: 1px solid #000; padding: 1.5mm 2.5mm 2mm; }
+  .bt { font-weight: 800; font-size: 10pt; border-bottom: 1px solid #000; margin: 0 -2.5mm 1.2mm; padding: 0 2.5mm 0.8mm; background: #e9e9e9; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  ul.parts { margin: 0; padding-left: 0; list-style: none; columns: 1; }
+  ul.parts li { margin: 0.4mm 0; }
+  table.rung { width: 100%; border-collapse: collapse; font-size: 9.6pt; }
+  table.rung th, table.rung td { border: 1px solid #555; padding: 0.4mm 1.5mm; text-align: left; }
+  table.rung th { background: #f0f0f0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  table.rung td:first-child, table.rung th:first-child, table.rung td:nth-child(3) { text-align: center; }
+  .steps .st { display: grid; grid-template-columns: 26mm 1fr; gap: 2mm; padding: 0.9mm 0; border-bottom: 1px dotted #888; }
+  .steps .st:last-child { border-bottom: none; }
+  .sl { font-weight: 800; }
+  .qa { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2mm 3mm; }
+  .qa .q { border-bottom: 1px dotted #888; padding-bottom: 0.8mm; }
+  .qq { font-weight: 800; }
+  .defs { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6mm 3.5mm; }
+  .defs .d { border-bottom: 1px dotted #888; padding-bottom: 1mm; }
+  .dt { display: inline-block; border: 1px solid #000; padding: 0 1.5mm; margin-right: 1mm; font-size: 9.2pt; }
+  .fix ul { margin: 0; padding-left: 4mm; }
+  .page.common { font-size: 11.2pt; line-height: 1.5; gap: 3.5mm; }
+  .page.common .defs { gap: 2.4mm 4mm; }
+
+  /* 회로도 흑백 */
+  .dia .hl-base, .dia .hl-base[class*="s-"] { stroke: #000 !important; stroke-width: 2.2px !important; }
+  .dia .hl-base.pilotline { stroke-dasharray: 7 5; stroke-width: 1.7px !important; }
+  .dia .hl-flow, .dia .hit, .dia .val-bg, .dia .svg-val { display: none !important; }
+  .dia .chamber { fill: transparent !important; }
+  .dia .ball { fill: #fff !important; stroke: #000 !important; transform: none !important; }
+  .dia .solenoid { fill: #fff !important; stroke: #000 !important; }
+  .dia .sol-diag { stroke: #000 !important; }
+  .dia .ls-box, .dia .ls-roller { fill: #fff !important; stroke: #000 !important; }
+  .dia .ls-plunger { transform: none !important; }
+  .dia .relief-arrow { transform: none !important; }
+  .dia .relief-arrow .ra-line { stroke: #000 !important; stroke-width: 2px !important; }
+  .dia .relief-arrow .ra-head { fill: #000 !important; }
+  .dia .v-item { stroke: #000 !important; stroke-width: 1.8px !important; }
+  .dia .v-head { fill: #000 !important; }
+  .dia .v-sq, .dia .v-sq.active { fill: #fff !important; stroke: #000 !important; }
+  .dia .sym, .dia .sym-thin, .dia .spring, .dia .sym-fill, .dia .gauge-face, .dia .rod { stroke: #000 !important; }
+  .dia .sym-fill, .dia .gauge-face, .dia .rod { fill: #fff !important; }
+  .dia .sym-solid, .dia .piston, .dia .jdot { fill: #000 !important; }
+  .dia .sym-dash, .dia .sym-dash.on { stroke: #000 !important; stroke-width: 1.5px !important; }
+  .dia .gauge-needle { stroke: #000 !important; transform: rotate(40deg) !important; }
+  .dia .dog { fill: #999 !important; }
+  .dia .spin { animation: none !important; }
+  .dia .box-dash { stroke: #000 !important; }
+  .dia .svg-label { fill: #000 !important; }
+  .dia .plain-name { fill: #000 !important; font-weight: 700; font-size: 13px; }
+  .dia .tag-bg { fill: #fff !important; stroke: #000 !important; opacity: 1 !important; }
+  .dia .tag-num, .dia .tag-name { fill: #000 !important; }
+  .dia .tag-name { font-size: 14px; }
+  @media screen {
+    body { background: #ddd !important; }
+    .page { width: 190mm; margin: 8px auto; background: #fff; padding: 9mm 10mm; box-sizing: content-box; box-shadow: 0 1px 8px rgba(0,0,0,.2); }
+  }
+</style>
+</head>
+<body>
+<div id="doc"></div>
+<script src="../js/svg.js"></script>
+<script src="../js/hyd.js"></script>
+<script src="../js/ladder.js"></script>
+<script src="../js/sim.js"></script>
+<script src="../js/tasks.js"></script>
+<script src="notes.js"></script>
+</body>
+</html>
